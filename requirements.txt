@@ -1,0 +1,5 @@
+# Dependencies for the root-level test.py prototype script only.
+# The real backend lives in backend/ (Node.js/TypeScript) — see README.md.
+gtfs-realtime-bindings
+requests
+python-dotenv

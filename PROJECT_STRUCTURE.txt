@@ -1,0 +1,54 @@
+kc-streetcar/
+├── README.md                      Project overview, setup instructions
+├── PROJECT_STRUCTURE.txt          This file
+├── docker-compose.yml             Local PostgreSQL for development
+├── .gitignore
+├── .gitattributes
+├── test.py                        Original prototype script (kept for reference) -
+│                                   confirms the GTFS-RT feed is reachable/parseable
+│
+├── backend/                       Node.js + TypeScript: poller + REST API
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── .env.example                Template for required environment variables
+│   ├── db/
+│   │   └── migrations/
+│   │       └── 001_init.sql        Creates the vehicle_positions table
+│   └── src/
+│       ├── index.ts                 App entry point: starts poller + Express server
+│       ├── config.ts                Loads/validates environment variables
+│       ├── db/
+│       │   └── pool.ts              PostgreSQL connection pool
+│       ├── services/
+│       │   ├── gtfsClient.ts        Fetches + parses the GTFS-RT protobuf feed
+│       │   ├── poller.ts            setInterval loop: fetch feed -> store positions
+│       │   └── vehicleRepository.ts DB access: insert positions, query live/history/stats
+│       ├── routes/
+│       │   └── vehicles.ts          Express routes: /api/vehicles/live, /history, /stats
+│       └── types/
+│           └── vehicle.ts           Shared TS types for vehicle position data
+│
+└── frontend/                      React + Vite + TypeScript: live map UI
+    ├── package.json
+    ├── vite.config.ts
+    ├── tsconfig.json
+    ├── index.html
+    └── src/
+        ├── main.tsx                 React entry point
+        ├── App.tsx                  Top-level layout
+        ├── api/
+        │   └── vehicles.ts          fetch() wrappers around the backend API
+        ├── components/
+        │   └── StreetcarMap.tsx     Leaflet map, polls live positions every ~15s
+        └── types/
+            └── vehicle.ts           Shared TS types (mirrors backend/src/types/vehicle.ts)
+
+Data flow:
+  Swiftly GTFS-RT feed -> backend/poller (every ~15s) -> PostgreSQL
+  PostgreSQL -> backend/API -> frontend (polls every ~15s) -> Leaflet map
+
+Notes:
+  - backend and frontend are independent npm projects (separate package.json/node_modules).
+  - The poller and API currently run together in one Node process (backend/src/index.ts)
+    for simplicity. They could be split into separate deployable services later if the
+    polling workload ever needs to scale independently of the API.
