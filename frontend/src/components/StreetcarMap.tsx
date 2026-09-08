@@ -3,7 +3,8 @@ import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip
 import { fetchLivePositions } from "../api/vehicles.js";
 import type { VehiclePosition } from "../types/vehicle.js";
 import { bearingToCompass, createVehicleIcon } from "./VehicleMarker.js";
-import { nearestPointOnRoute, snapToRoute } from "../lib/routeMatch.js";
+import { nearestPointOnRoute } from "../lib/routeMatch.js";
+import { useAnimatedVehicles } from "../lib/useAnimatedVehicles.js";
 import streetcarRoute from "../data/streetcarRoute.json";
 
 const POLL_INTERVAL_MS = 15000;
@@ -24,6 +25,7 @@ const ROUTE_BOUNDS: [[number, number], [number, number]] = [
 
 export default function StreetcarMap() {
   const [vehicles, setVehicles] = useState<VehiclePosition[]>([]);
+  const animatedVehicles = useAnimatedVehicles(vehicles);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,28 +85,23 @@ export default function StreetcarMap() {
         </CircleMarker>
       ))}
 
-      {vehicles.map((v) => {
-        const snapped = snapToRoute(v.latitude, v.longitude, v.bearing ?? null);
-        const position: [number, number] = snapped ? [snapped.lat, snapped.lon] : [v.latitude, v.longitude];
-        const heading = snapped ? snapped.bearing : v.bearing ?? 0;
-        return (
-          <Marker key={v.vehicle_id} position={position} icon={createVehicleIcon(heading)}>
-            <Popup>
-              <div>
-                <strong>{v.vehicle_label ?? v.vehicle_id}</strong>
-                <br />
-                Speed: {v.speed_mps != null ? `${v.speed_mps.toFixed(1)} m/s` : "n/a"}
-                <br />
-                Heading: {v.bearing != null ? `${bearingToCompass(v.bearing)} (${Math.round(v.bearing)}°)` : "n/a"}
-                <br />
-                Occupancy: {v.occupancy_percentage != null ? `${v.occupancy_percentage}%` : "n/a"}
-                <br />
-                Updated: {new Date(v.feed_timestamp).toLocaleTimeString()}
-              </div>
-            </Popup>
-          </Marker>
-        );
-      })}
+      {animatedVehicles.map(({ vehicle: v, lat, lon, bearing }) => (
+        <Marker key={v.vehicle_id} position={[lat, lon]} icon={createVehicleIcon(bearing)}>
+          <Popup>
+            <div>
+              <strong>{v.vehicle_label ?? v.vehicle_id}</strong>
+              <br />
+              Speed: {v.speed_mps != null ? `${(v.speed_mps * 2.236936).toFixed(1)} mph` : "n/a"}
+              <br />
+              Heading: {v.bearing != null ? `${bearingToCompass(v.bearing)} (${Math.round(v.bearing)}°)` : "n/a"}
+              <br />
+              Occupancy: {v.occupancy_percentage != null ? `${v.occupancy_percentage}%` : "n/a"}
+              <br />
+              Updated: {new Date(v.feed_timestamp).toLocaleTimeString()}
+            </div>
+          </Popup>
+        </Marker>
+      ))}
     </MapContainer>
   );
 }
