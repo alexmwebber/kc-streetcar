@@ -68,7 +68,9 @@ function angularDiff(a: number, b: number): number {
 export interface SnappedPosition {
   lat: number;
   lon: number;
-  bearing: number;
+  /** Forward bearing of the matched segment. Not resolved to a travel
+   *  direction — the segment could be run either way; callers disambiguate. */
+  segmentBearing: number;
 }
 
 interface Match {
@@ -110,24 +112,16 @@ function pointAt({ seg, t }: Match): [number, number] {
 }
 
 /**
- * Snap a raw GPS position onto the route. Returns the on-line position and a
- * heading taken from the matched segment (flipped 180° when needed so it
- * matches the direction the vehicle is actually travelling, per its GPS
- * bearing). Returns null when the vehicle is further than MAX_SNAP_METERS
- * from the route.
+ * Snap a raw GPS position onto the route. Returns the on-line position and the
+ * matched segment's forward bearing (see SnappedPosition). Returns null when
+ * the vehicle is further than MAX_SNAP_METERS from the route.
  */
-export function snapToRoute(lat: number, lon: number, gpsBearing: number | null): SnappedPosition | null {
+export function snapToRoute(lat: number, lon: number): SnappedPosition | null {
   const match = nearestSegment(lat, lon);
   if (match.distMeters > MAX_SNAP_METERS) return null;
 
   const [snappedLat, snappedLon] = pointAt(match);
-
-  let bearing = match.seg.bearing;
-  if (gpsBearing != null && angularDiff(bearing, gpsBearing) > 90) {
-    bearing = (bearing + 180) % 360;
-  }
-
-  return { lat: snappedLat, lon: snappedLon, bearing };
+  return { lat: snappedLat, lon: snappedLon, segmentBearing: match.seg.bearing };
 }
 
 /**
@@ -136,4 +130,25 @@ export function snapToRoute(lat: number, lon: number, gpsBearing: number | null)
  */
 export function nearestPointOnRoute(lat: number, lon: number): [number, number] {
   return pointAt(nearestSegment(lat, lon));
+}
+
+/** Planar distance in metres between two lat/lon points (KC-local projection). */
+export function metersBetween(aLat: number, aLon: number, bLat: number, bLon: number): number {
+  const dx = (bLon - aLon) * M_PER_DEG_LON;
+  const dy = (bLat - aLat) * M_PER_DEG_LAT;
+  return Math.hypot(dx, dy);
+}
+
+/** Compass bearing (deg) from point A to point B. */
+export function headingBetween(aLat: number, aLon: number, bLat: number, bLon: number): number {
+  return initialBearing([aLat, aLon], [bLat, bLon]);
+}
+
+/**
+ * Orient a track's forward bearing to a reference direction: returns
+ * `segmentBearing` or `segmentBearing + 180`, whichever points the same way as
+ * `reference` (within 90°).
+ */
+export function alignToTrack(segmentBearing: number, reference: number): number {
+  return angularDiff(segmentBearing, reference) > 90 ? (segmentBearing + 180) % 360 : segmentBearing;
 }

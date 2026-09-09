@@ -26,11 +26,17 @@ export async function insertPosition(position: VehiclePosition): Promise<void> {
   );
 }
 
+// Vehicles report roughly every 15s; anything not heard from in this window
+// has gone out of service and shouldn't linger on the live map.
+const LIVE_STALE_AFTER = "5 minutes";
+
 export async function getLatestPositions() {
   const { rows } = await pool.query(
     `SELECT DISTINCT ON (vehicle_id) *
      FROM vehicle_positions
+     WHERE feed_timestamp > now() - $1::interval
      ORDER BY vehicle_id, feed_timestamp DESC`,
+    [LIVE_STALE_AFTER],
   );
   return rows;
 }
