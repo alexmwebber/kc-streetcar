@@ -1,3 +1,25 @@
+:root {
+  --ring-track: rgba(0, 0, 0, 0.12);
+  --chrome-bg: rgba(255, 255, 255, 0.9);
+  --chrome-bg-hover: #ffffff;
+  --chrome-fg: #333333;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: #eef1f3;
+}
+
+[data-theme="dark"] body {
+  background: #16181c;
+}
+
 .streetcar-icon {
   background: transparent;
   border: none;
@@ -5,4 +27,84 @@
 
 .leaflet-container {
   background: #eef1f3;
+}
+
+/* Map chrome overlays (poll ring, theme toggle) — share one pill style. */
+.poll-progress,
+.theme-toggle {
+  position: absolute;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--chrome-bg);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.poll-progress {
+  top: 12px;
+  right: 12px;
+}
+
+.theme-toggle {
+  bottom: 12px;
+  left: 12px;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  color: var(--chrome-fg);
+}
+
+.theme-toggle:hover {
+  background: var(--chrome-bg-hover);
+}
+
+/* Dark theme — scoped to the map wrapper's data-theme attribute. */
+[data-theme="dark"] {
+  --ring-track: rgba(255, 255, 255, 0.18);
+  --chrome-bg: rgba(32, 35, 39, 0.92);
+  --chrome-bg-hover: rgba(42, 46, 51, 0.95);
+  --chrome-fg: #e8e8e8;
+}
+
+[data-theme="dark"] .leaflet-container {
+  background: #16181c;
+}
+
+[data-theme="dark"] .leaflet-bar a,
+[data-theme="dark"] .leaflet-bar a:hover {
+  background: #202327;
+  color: #e8e8e8;
+  border-bottom-color: #3a3d42;
+}
+
+[data-theme="dark"] .leaflet-bar a:hover {
+  background: #2a2e33;
+}
+
+[data-theme="dark"] .leaflet-control-attribution {
+  background: rgba(32, 35, 39, 0.8);
+  color: #b8bcc2;
+}
+
+[data-theme="dark"] .leaflet-control-attribution a {
+  color: #8ab4f8;
+}
+
+[data-theme="dark"] .leaflet-popup-content-wrapper,
+[data-theme="dark"] .leaflet-popup-tip,
+[data-theme="dark"] .leaflet-tooltip {
+  background: #202327;
+  color: #e8e8e8;
+}
+
+[data-theme="dark"] .leaflet-tooltip-top::before {
+  border-top-color: #202327;
+}
+
+[data-theme="dark"] .leaflet-popup-close-button {
+  color: #b8bcc2;
 }
