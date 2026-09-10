@@ -29,15 +29,17 @@ Live tracking doc for hosting the KC Streetcar Tracker. Check items off as we go
 - [x] New `backend/Dockerfile` - multi-stage `node:22-alpine`: builder runs `npm ci` + `npm run build`; runtime does `npm ci --omit=dev`, copies `dist/`, and copies `db/migrations` -> `dist/db/migrations` (tsc does not copy `.sql`), then `CMD ["node", "dist/src/index.js"]`.
 - [x] New `backend/.dockerignore` (`node_modules`, `dist`, `.env*`).
 - [ ] CORS tightening (do in Phase 4). `backend/src/index.ts` uses wide-open `app.use(cors())`. Add a `CORS_ORIGIN` env var and restrict to the Static Web Apps URL.
-- [ ] Neon SSL fallback (only if needed). `pg` 8.12 honors `?sslmode=require` in Neon's connection string, so likely no change. If `self-signed certificate` errors appear, add `ssl: { rejectUnauthorized: false }` to the `Pool` in `backend/src/db/pool.ts` and `backend/db/migrate.ts`.
+- [x] Neon SSL fallback - not needed. `pg` connects fine with `?sslmode=require&channel_binding=require` from Neon (current `pg` treats `sslmode=require` as `verify-full`; Neon's cert is publicly trusted). Harmless deprecation warning about future `pg` v9 semantics - no code change.
 - [x] Proved it locally: `docker build -t kc-streetcar-backend ./backend` succeeds; container starts, `/health` returns `{"ok":true}`, poller fails gracefully with no DB reachable (expected until Phase 1 points it at Neon).
 
 ## Phase 1 - Neon database
 
-- [ ] Create a Neon project in a region near the Azure region (e.g. AWS `us-east-1` <-> Azure `eastus2`).
-- [ ] Copy the **pooled** connection string (`...-pooler...?sslmode=require`).
-- [ ] Run migrations from the laptop: `cd backend && DATABASE_URL="<neon-url>" npm run migrate`.
-- [ ] Verify: `psql "<neon-url>" -c "\dt"` shows `vehicle_positions`.
+- [x] Created Neon project in `us-east-2` (AWS), Postgres only (no object storage / functions / auth). Pairs with Azure `eastus2`.
+- [x] Have the **pooled** connection string (host contains `-pooler`, `neondb` database, `neondb_owner` role).
+- [x] Ran migrations from the laptop: `cd backend && DATABASE_URL="<neon-url>" npm run migrate` -> "Migrations complete."
+- [x] Verified: `vehicle_positions` exists with all 15 columns and 3 indexes (`_pkey`, `_feed_timestamp`, `_vehicle_time`); 0 rows.
+
+> The connection string was shared in chat during setup. If that's a concern, reset the `neondb_owner` password in the Neon console (Dashboard -> Roles) and update the ACA secret in Phase 3.
 
 ## Phase 2 - Azure foundation
 
@@ -87,3 +89,4 @@ Live tracking doc for hosting the KC Streetcar Tracker. Check items off as we go
 
 - 2026-09-09: Plan created.
 - 2026-09-09: Phase 0 done. `start` script fixed, frontend API base URL wired (+ `vite-env.d.ts`, `.env.example`), `backend/Dockerfile` + `.dockerignore` added. Backend and frontend builds pass; image builds and runs (`/health` OK).
+- 2026-09-09: Phase 1 done. Neon project created (`us-east-2`, Postgres only). Migration applied against Neon; schema verified (`vehicle_positions`, 15 cols, 3 indexes, 0 rows). No SSL code change needed. Next: Phase 2 (Azure CLI + resource group + Container Apps environment).
