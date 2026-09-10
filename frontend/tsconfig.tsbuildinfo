@@ -1,1 +1,0 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/api/vehicles.ts","./src/components/pollprogress.tsx","./src/components/streetcarmap.tsx","./src/components/themetoggle.tsx","./src/components/vehiclemarker.tsx","./src/lib/routematch.ts","./src/lib/useanimatedvehicles.ts","./src/lib/usetheme.ts","./src/types/vehicle.ts"],"version":"5.9.3"}
