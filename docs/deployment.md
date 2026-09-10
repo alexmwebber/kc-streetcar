@@ -23,14 +23,14 @@ Live tracking doc for hosting the KC Streetcar Tracker. Check items off as we go
 
 ## Phase 0 - Code changes (needed for any host)
 
-- [ ] Fix the backend `start` script. `backend/package.json` says `node dist/index.js`, but with `rootDir: "."` the build emits `dist/src/index.js`. Change to `node dist/src/index.js`.
-- [ ] API base URL in the frontend. `frontend/src/api/vehicles.ts` hard-codes `fetch("/api/vehicles/live")`. Change to `` fetch(`${import.meta.env.VITE_API_BASE_URL ?? ""}/api/vehicles/live`) ``. Empty value locally -> relative path -> existing `vite.config.ts` dev proxy still works.
-- [ ] Add `VITE_API_BASE_URL=` to a new `frontend/.env.example`.
-- [ ] New `backend/Dockerfile` - multi-stage `node:22-alpine`: builder runs `npm ci` + `npm run build`; runtime copies `dist/`, production `node_modules`, and `db/migrations/*.sql` (tsc does not copy `.sql`), then `CMD ["node", "dist/src/index.js"]`.
-- [ ] New `backend/.dockerignore` (`node_modules`, `dist`, `.env`).
+- [x] Fix the backend `start` script. `backend/package.json` said `node dist/index.js`, but with `rootDir: "."` the build emits `dist/src/index.js`. Now `node dist/src/index.js`.
+- [x] API base URL in the frontend. `frontend/src/api/vehicles.ts` now prefixes requests with `import.meta.env.VITE_API_BASE_URL ?? ""`. Empty value locally -> relative path -> existing `vite.config.ts` dev proxy still works. Added `frontend/src/vite-env.d.ts` for the env type.
+- [x] Added `VITE_API_BASE_URL=` to a new `frontend/.env.example`.
+- [x] New `backend/Dockerfile` - multi-stage `node:22-alpine`: builder runs `npm ci` + `npm run build`; runtime does `npm ci --omit=dev`, copies `dist/`, and copies `db/migrations` -> `dist/db/migrations` (tsc does not copy `.sql`), then `CMD ["node", "dist/src/index.js"]`.
+- [x] New `backend/.dockerignore` (`node_modules`, `dist`, `.env*`).
 - [ ] CORS tightening (do in Phase 4). `backend/src/index.ts` uses wide-open `app.use(cors())`. Add a `CORS_ORIGIN` env var and restrict to the Static Web Apps URL.
 - [ ] Neon SSL fallback (only if needed). `pg` 8.12 honors `?sslmode=require` in Neon's connection string, so likely no change. If `self-signed certificate` errors appear, add `ssl: { rejectUnauthorized: false }` to the `Pool` in `backend/src/db/pool.ts` and `backend/db/migrate.ts`.
-- [ ] Prove it locally: `docker build -t kc-streetcar-backend ./backend`, run with `--env-file` pointing at a Neon connection string, hit `/health` and `/api/vehicles/live`.
+- [x] Proved it locally: `docker build -t kc-streetcar-backend ./backend` succeeds; container starts, `/health` returns `{"ok":true}`, poller fails gracefully with no DB reachable (expected until Phase 1 points it at Neon).
 
 ## Phase 1 - Neon database
 
@@ -86,3 +86,4 @@ Live tracking doc for hosting the KC Streetcar Tracker. Check items off as we go
 ## Progress log
 
 - 2026-09-09: Plan created.
+- 2026-09-09: Phase 0 done. `start` script fixed, frontend API base URL wired (+ `vite-env.d.ts`, `.env.example`), `backend/Dockerfile` + `.dockerignore` added. Backend and frontend builds pass; image builds and runs (`/health` OK).
