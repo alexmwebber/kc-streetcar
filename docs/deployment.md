@@ -84,7 +84,7 @@ Live tracking doc for hosting the KC Streetcar Tracker. Check items off as we go
 
 - [ ] Azure Cost Management billing alert at **$20**.
 - [ ] Keep Log Analytics retention low (watch the 5 GB/mo free ingestion cap).
-- [ ] Optional: custom domain (CNAME -> SWA for the app, subdomain -> ACA for the API; both get free managed certs).
+- [ ] **Custom domain (planned, not optional-forgotten)** - replace `proud-island-0a037380f.6.azurestaticapps.net` / `kc-streetcar-api.mangoground-3203ab82.eastus2.azurecontainerapps.io` with something recognizable. Decided 2026-09-11 to do this *after* Phase 5, as one pass covering both frontend and backend rather than piecemeal. Don't own a domain yet - need to register one first (that's the blocking prerequisite, not anything Azure-side). Once registered: CNAME -> SWA for the app, a subdomain -> ACA for the API; both get free managed certs automatically.
 - [ ] Optional: a scheduled `pg_dump` GitHub Action to blob storage if the position history matters.
 
 ---
