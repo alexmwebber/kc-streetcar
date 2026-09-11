@@ -19,20 +19,34 @@ jobs:
         with:
           submodules: true
           lfs: false
-      - name: Build And Deploy
-        id: builddeploy
-        uses: Azure/static-web-apps-deploy@v1
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Build ourselves on the standard Ubuntu runner instead of letting the
+      # deploy action hand this off to Oryx's auto-build: Oryx's container has
+      # an older glibc than the Rollup native binary vite build pulls in
+      # (fails with "GLIBC_2.32' not found" - not a bug in our code).
+      - name: Install and build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
         env:
           VITE_API_BASE_URL: https://kc-streetcar-api.mangoground-3203ab82.eastus2.azurecontainerapps.io
+      - name: Deploy
+        id: builddeploy
+        uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_PROUD_ISLAND_0A037380F }}
           repo_token: ${{ secrets.GITHUB_TOKEN }} # Used for Github integrations (i.e. PR comments)
           action: "upload"
           ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
           # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
-          app_location: "frontend" # App source code path
+          app_location: "frontend/dist" # Already-built static files (see build step above)
           api_location: "" # Api source code path - optional
-          output_location: "dist" # Built app content directory - optional
+          output_location: "" # Not used with skip_app_build
+          skip_app_build: true
           ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:
