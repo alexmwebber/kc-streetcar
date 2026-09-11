@@ -65,9 +65,13 @@ Live tracking doc for hosting the KC Streetcar Tracker. Check items off as we go
 
 ## Phase 4 - Frontend on Static Web Apps
 
-- [ ] `az staticwebapp create` against the repo: `app_location=frontend`, `output_location=dist`, build `npm run build`. Auto-adds a `.github/workflows/azure-static-web-apps-*.yml`.
-- [ ] Set `VITE_API_BASE_URL=https://<aca-fqdn>` as a build env var in that workflow.
-- [ ] Set the backend's `CORS_ORIGIN` to the `*.azurestaticwebapps.net` URL and switch `cors()` -> `cors({ origin: ... })`.
+- [x] `az staticwebapp create -n kc-streetcar-web -g kc-streetcar -l eastus2 -s <repo> --branch main --app-location frontend --output-location dist --login-with-github`. Needed `Microsoft.Web` provider registration first (same "new subscription, unregistered provider" pattern as Phase 2). GitHub device-code auth (interactive - visited github.com/login/device) since the repo is private. Site: `https://proud-island-0a037380f.6.azurestaticapps.net`.
+- [x] Azure auto-committed `.github/workflows/azure-static-web-apps-proud-island-0a037380f.yml` **directly to origin/main** via its own GitHub integration - diverged from local main (which had unpushed Phase 2/3 commits). Merged and pushed to reconcile.
+- [x] Added `VITE_API_BASE_URL` as a build-time `env:` on the workflow's `Build And Deploy` step (Oryx inherits the step's process env when it runs `npm run build`).
+- [x] Backend: added `CORS_ORIGIN` config (defaults to `*` locally), `cors({ origin: config.corsOrigin })`. Rebuilt image, tagged by commit SHA (`840a78f`, not just `:latest` - more traceable, same pattern Phase 5 will automate), pushed, rolled out via `az containerapp update --image ... --set-env-vars CORS_ORIGIN=...`.
+- [x] Verified: new revision `--0000003` healthy at 100% traffic; CORS preflight from the SWA origin returns that exact origin (not `*`); `/api/vehicles/live` works with the SWA `Origin` header; frontend root returns 200.
+
+> **Gotcha - local git couldn't push at all.** `~/.gitconfig` had a corrupted `credential.helper=cache --timeout=30000000000000000` (out of int range), which broke every `git fetch`/`push` from the CLI while GitHub Desktop kept working fine (it manages its own credentials separately). Fixed with `git config --global credential.helper manager`, matching the system-level default.
 
 ## Phase 5 - CI/CD for the backend
 
@@ -100,3 +104,4 @@ Live tracking doc for hosting the KC Streetcar Tracker. Check items off as we go
 - 2026-09-09: Phase 1 done. Neon project created (`us-east-2`, Postgres only). Migration applied against Neon; schema verified (`vehicle_positions`, 15 cols, 3 indexes, 0 rows). No SSL code change needed. Next: Phase 2 (Azure CLI + resource group + Container Apps environment).
 - 2026-09-11: Phase 2 done. Azure free-trial account created, `az` CLI installed and logged in, `containerapp` extension added, providers registered, `kc-streetcar` resource group and `kc-streetcar-env` Container Apps environment created in `eastus2`. Next: Phase 3 (push image to ghcr.io, `az containerapp create`).
 - 2026-09-11: Phase 3 done. Image pushed to `ghcr.io/alexmwebber/kc-streetcar-backend:latest` (public package). `kc-streetcar-api` Container App live at `https://kc-streetcar-api.mangoground-3203ab82.eastus2.azurecontainerapps.io` - `/health` and `/api/vehicles/live` both returning real data, poller confirmed running in logs, liveness probe added. Hit and fixed a Windows/PowerShell gotcha where an unescaped `&` in the DATABASE_URL secret split the `az containerapp create` command (see note above) - resolved by applying config via `az containerapp update --yaml`. Next: Phase 4 (Static Web Apps frontend).
+- 2026-09-11: Phase 4 done. Static Web App `kc-streetcar-web` live at `https://proud-island-0a037380f.6.azurestaticapps.net`, connected to the backend with `VITE_API_BASE_URL` baked in at build time and `CORS_ORIGIN` locked down on the API side. Fixed a broken global git credential helper along the way (see note above) and reconciled a divergent origin/main caused by Azure's GitHub integration committing the workflow file directly. Full chain verified: frontend -> API -> Neon. Next: Phase 5 (CI/CD for the backend).
