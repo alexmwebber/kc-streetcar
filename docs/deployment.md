@@ -43,9 +43,11 @@ Live tracking doc for hosting the KC Streetcar Tracker. Check items off as we go
 
 ## Phase 2 - Azure foundation
 
-- [ ] `az login`; `az extension add --name containerapp --upgrade`; register providers `Microsoft.App` and `Microsoft.OperationalInsights`.
-- [ ] `az group create -n kc-streetcar -l eastus2`
-- [ ] `az containerapp env create -n kc-streetcar-env -g kc-streetcar -l eastus2` (Consumption plan - no management fee).
+- [x] `az login` (Azure free trial account; remember to upgrade the same subscription to Pay-As-You-Go before the 30-day/$200 trial ends, or resources pause). `az extension add --name containerapp --upgrade` (v1.3.0b5, preview). Registered providers `Microsoft.App` and `Microsoft.OperationalInsights`.
+- [x] `az group create -n kc-streetcar -l eastus2`
+- [x] `az containerapp env create -n kc-streetcar-env -g kc-streetcar -l eastus2` (Consumption plan - no management fee). Auto-created Log Analytics workspace `workspace-kcstreetcarW4xM`.
+
+> Note: on this machine `az` wasn't on PATH in scripted shells even though it worked in an interactive `cmd`/PowerShell window right after install - it's at `C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd`. A fresh terminal window should have it on PATH already.
 
 ## Phase 3 - First backend deploy (manual, to learn the pieces)
 
@@ -90,3 +92,4 @@ Live tracking doc for hosting the KC Streetcar Tracker. Check items off as we go
 - 2026-09-09: Plan created.
 - 2026-09-09: Phase 0 done. `start` script fixed, frontend API base URL wired (+ `vite-env.d.ts`, `.env.example`), `backend/Dockerfile` + `.dockerignore` added. Backend and frontend builds pass; image builds and runs (`/health` OK).
 - 2026-09-09: Phase 1 done. Neon project created (`us-east-2`, Postgres only). Migration applied against Neon; schema verified (`vehicle_positions`, 15 cols, 3 indexes, 0 rows). No SSL code change needed. Next: Phase 2 (Azure CLI + resource group + Container Apps environment).
+- 2026-09-11: Phase 2 done. Azure free-trial account created, `az` CLI installed and logged in, `containerapp` extension added, providers registered, `kc-streetcar` resource group and `kc-streetcar-env` Container Apps environment created in `eastus2`. Next: Phase 3 (push image to ghcr.io, `az containerapp create`).
