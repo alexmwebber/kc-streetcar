@@ -2,6 +2,8 @@
 
 Live tracking doc for hosting the KC Streetcar Tracker. Check items off as we go.
 
+For a description of how the finished pipeline actually works day to day (not the setup history), see [ci-cd-pipeline.md](./ci-cd-pipeline.md).
+
 ## Target architecture
 
 | Piece | Where | Cost |
