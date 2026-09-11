@@ -73,6 +73,8 @@ Live tracking doc for hosting the KC Streetcar Tracker. Check items off as we go
 
 > **Gotcha - local git couldn't push at all.** `~/.gitconfig` had a corrupted `credential.helper=cache --timeout=30000000000000000` (out of int range), which broke every `git fetch`/`push` from the CLI while GitHub Desktop kept working fine (it manages its own credentials separately). Fixed with `git config --global credential.helper manager`, matching the system-level default.
 
+> **Gotcha - site showed SWA's "check back later" placeholder.** All 4 auto-deploys since creation had actually failed (checked via the GitHub Actions API): Oryx's build container's glibc predates what the Rollup native binary `vite build` pulls in (`GLIBC_2.32' not found` - a known Oryx/Rollup friction point, not our code). Fixed by building on the standard `ubuntu-latest` runner ourselves (`actions/setup-node@v4` + `npm ci && npm run build`) and handing the deploy action the finished `frontend/dist` with `skip_app_build: true`, bypassing Oryx entirely. Verified via the run's actual conclusion (`success`) and the served page's `<title>`, not just an HTTP 200 (SWA returns 200 for the placeholder too).
+
 ## Phase 5 - CI/CD for the backend
 
 - [ ] `.github/workflows/deploy-backend.yml`: on push to `main` under `backend/**` -> build, push `ghcr.io/...:${{ github.sha }}` and `:latest`, then `az containerapp update --image ...:${{ github.sha }}`.
