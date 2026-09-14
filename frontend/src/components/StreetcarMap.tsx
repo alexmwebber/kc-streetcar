@@ -1,13 +1,15 @@
 import type { Map as LeafletMap } from "leaflet";
 import { useEffect, useRef, useState } from "react";
-import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip } from "react-leaflet";
-import { fetchLivePositions } from "../api/vehicles.js";
+import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer } from "react-leaflet";
+import { fetchLivePositions, fetchStopPredictions } from "../api/vehicles.js";
+import type { StopPrediction } from "../types/prediction.js";
 import type { VehiclePosition } from "../types/vehicle.js";
 import { bearingToCompass, createVehicleIcon } from "./VehicleMarker.js";
 import PollProgress from "./PollProgress.js";
 import ThemeToggle from "./ThemeToggle.js";
 import UserLocationMarker from "./UserLocationMarker.js";
 import { nearestPointOnRoute } from "../lib/routeMatch.js";
+import { formatEta, nextArrivals, type StopArrival } from "../lib/stopArrivals.js";
 import { useAnimatedVehicles } from "../lib/useAnimatedVehicles.js";
 import { useGeolocation } from "../lib/useGeolocation.js";
 import { useTheme } from "../lib/useTheme.js";
@@ -27,10 +29,62 @@ const TILES = {
 // Grand Ave, southbound via Delaware St) before sharing a single track the rest of the
 // way to UMKC. Both are rendered; they coincide everywhere except that northern loop.
 const ROUTE_PATHS = streetcarRoute.paths as [number, number][][];
-const ROUTE_STOPS = (streetcarRoute.stops as { name: string; lat: number; lon: number }[]).map((stop) => {
+const ROUTE_STOPS = (
+  streetcarRoute.stops as { name: string; lat: number; lon: number; stopIds: string[] }[]
+).map((stop) => {
   const [lat, lon] = nearestPointOnRoute(stop.lat, stop.lon);
-  return { name: stop.name, lat, lon };
+  return { name: stop.name, lat, lon, stopIds: stop.stopIds };
 });
+function StopInfo({ name, arrivals }: { name: string; arrivals: StopArrival[] }) {
+  return (
+    <div>
+      <strong>{name}</strong>
+      <br />
+      {arrivals.length > 0 ? (
+        arrivals.map((arrival) => (
+          <div key={arrival.label}>
+            {arrival.label}: {formatEta(arrival.etaSeconds)}
+          </div>
+        ))
+      ) : (
+        <span>No upcoming arrivals</span>
+      )}
+    </div>
+  );
+}
+
+// One popup for both hover and click: hovering opens it as a preview; clicking
+// "pins" it so it stays open after the mouse leaves, until it's closed (via
+// its own × button or by clicking elsewhere on the map, which resets the pin).
+function StopMarker({ stop, arrivals }: { stop: { name: string; lat: number; lon: number }; arrivals: StopArrival[] }) {
+  const pinnedRef = useRef(false);
+
+  return (
+    <CircleMarker
+      center={[stop.lat, stop.lon]}
+      radius={4}
+      pathOptions={{ color: ROUTE_COLOR, weight: 2, fillColor: "#ffffff", fillOpacity: 1 }}
+      eventHandlers={{
+        mouseover: (e) => e.target.openPopup(),
+        mouseout: (e) => {
+          if (!pinnedRef.current) e.target.closePopup();
+        },
+        click: (e) => {
+          pinnedRef.current = true;
+          e.target.openPopup();
+        },
+        popupclose: () => {
+          pinnedRef.current = false;
+        },
+      }}
+    >
+      <Popup>
+        <StopInfo name={stop.name} arrivals={arrivals} />
+      </Popup>
+    </CircleMarker>
+  );
+}
+
 const ALL_ROUTE_POINTS = ROUTE_PATHS.flat();
 const ROUTE_BOUNDS: [[number, number], [number, number]] = [
   [Math.min(...ALL_ROUTE_POINTS.map((p) => p[0])), Math.min(...ALL_ROUTE_POINTS.map((p) => p[1]))],
@@ -39,6 +93,7 @@ const ROUTE_BOUNDS: [[number, number], [number, number]] = [
 
 export default function StreetcarMap() {
   const [vehicles, setVehicles] = useState<VehiclePosition[]>([]);
+  const [predictions, setPredictions] = useState<StopPrediction[]>([]);
   const [pollCycle, setPollCycle] = useState(0);
   const [theme, toggleTheme] = useTheme();
   const animatedVehicles = useAnimatedVehicles(vehicles);
@@ -65,6 +120,15 @@ export default function StreetcarMap() {
         }
       } catch (err) {
         console.error("Failed to fetch live positions:", err);
+      }
+
+      try {
+        const stopPredictions = await fetchStopPredictions();
+        if (!cancelled) {
+          setPredictions(stopPredictions);
+        }
+      } catch (err) {
+        console.error("Failed to fetch stop predictions:", err);
       }
     };
 
@@ -108,16 +172,7 @@ export default function StreetcarMap() {
         ))}
 
         {ROUTE_STOPS.map((stop) => (
-          <CircleMarker
-            key={stop.name}
-            center={[stop.lat, stop.lon]}
-            radius={4}
-            pathOptions={{ color: ROUTE_COLOR, weight: 2, fillColor: "#ffffff", fillOpacity: 1 }}
-          >
-            <Tooltip direction="top" offset={[0, -4]}>
-              {stop.name}
-            </Tooltip>
-          </CircleMarker>
+          <StopMarker key={stop.name} stop={stop} arrivals={nextArrivals(stop.stopIds, predictions, new Date())} />
         ))}
 
         {animatedVehicles.map(({ vehicle: v, lat, lon, bearing }) => (

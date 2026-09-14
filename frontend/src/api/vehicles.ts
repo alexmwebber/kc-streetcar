@@ -1,3 +1,4 @@
+import type { StopPrediction } from "../types/prediction.js";
 import type { VehiclePosition } from "../types/vehicle.js";
 
 // Empty in local dev: requests stay relative and Vite proxies /api to the
@@ -9,6 +10,14 @@ export async function fetchLivePositions(): Promise<VehiclePosition[]> {
   const res = await fetch(`${API_BASE_URL}/api/vehicles/live`);
   if (!res.ok) {
     throw new Error(`Failed to fetch live positions: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchStopPredictions(): Promise<StopPrediction[]> {
+  const res = await fetch(`${API_BASE_URL}/api/vehicles/predictions`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch stop predictions: ${res.status}`);
   }
   return res.json();
 }

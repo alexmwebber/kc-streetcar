@@ -23,11 +23,11 @@ This document describes how KC Streetcar Tracker is hosted and deployed. For the
 flowchart LR
   Browser -->|HTTPS| SWA["Azure Static Web Apps<br/>kc-streetcar-web"]
   SWA -->|"fetch /api/vehicles/live<br/>(VITE_API_BASE_URL, baked in at build time)"| ACA["Azure Container Apps<br/>kc-streetcar-api"]
-  ACA -->|poll every 15s| Swiftly["Swiftly GTFS-RT feed"]
+  ACA -->|poll every 15s| Swiftly["Swiftly GTFS-RT feeds<br/>(vehicle positions + trip updates)"]
   ACA -->|read / write| Neon[("Neon Postgres")]
 ```
 
-The backend runs as a single always-on process that serves the `/api/vehicles/*` and `/health` routes and polls the GTFS-RT feed every 15 seconds in the background ([poller.ts](../backend/src/services/poller.ts)). The Container App is pinned to exactly one replica (`--min-replicas 1 --max-replicas 1`): scaling to zero would stop the poller, and more than one replica would produce duplicate polling and duplicate rows in Neon.
+The backend runs as a single always-on process that serves the `/api/vehicles/*` and `/health` routes and polls the GTFS-RT vehicle-positions and trip-updates feeds every 15 seconds in the background ([poller.ts](../backend/src/services/poller.ts)). The Container App is pinned to exactly one replica (`--min-replicas 1 --max-replicas 1`): scaling to zero would stop the poller, and more than one replica would produce duplicate polling and duplicate rows in Neon.
 
 ## Deploy pipeline
 
@@ -76,7 +76,7 @@ The frontend pipeline's authentication is simpler: a deployment token scoped to 
 |---|---|---|
 | `SWIFTLY_API_KEY` | secret (`swiftly-key`) | Swiftly GTFS-RT API key |
 | `DATABASE_URL` | secret (`db-url`) | Neon pooled connection string (`sslmode=require&channel_binding=require`) |
-| `GTFS_RT_URL` | plain | Swiftly feed URL |
+| `GTFS_RT_BASE_URL` | plain | Swiftly base URL; backend appends `/gtfs-rt-vehicle-positions` and `/gtfs-rt-trip-updates` |
 | `STREETCAR_ROUTE_ID` | plain | `601` |
 | `POLL_INTERVAL_MS` | plain | `15000` |
 | `PORT` | plain | `3001` |

@@ -4,7 +4,7 @@ import { config } from "../config.js";
 import type { VehiclePosition } from "../types/vehicle.js";
 
 export async function fetchStreetcarPositions(): Promise<VehiclePosition[]> {
-  const response = await fetch(config.gtfsRtUrl, {
+  const response = await fetch(config.gtfsRtVehiclePositionsUrl, {
     headers: { Authorization: config.swiftlyApiKey },
   });
 

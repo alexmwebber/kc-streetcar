@@ -1,4 +1,5 @@
 import { Router, type RequestHandler } from "express";
+import { getPredictions } from "../services/predictionsStore.js";
 import { getAverageSpeed, getLatestPositions, getPositionHistory } from "../services/vehicleRepository.js";
 
 export const vehiclesRouter = Router();
@@ -20,6 +21,13 @@ vehiclesRouter.get(
   asyncHandler(async (_req, res) => {
     const positions = await getLatestPositions();
     res.json(positions);
+  }),
+);
+
+vehiclesRouter.get(
+  "/predictions",
+  asyncHandler(async (_req, res) => {
+    res.json(getPredictions());
   }),
 );
 

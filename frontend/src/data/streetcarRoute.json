@@ -3141,97 +3141,122 @@
     {
       "name": "Riverfront (Berkley Riverfront)",
       "lat": 39.117173,
-      "lon": -94.572115
+      "lon": -94.572115,
+      "stopIds": ["1598"]
     },
     {
-      "name": "River Market (3rd & Grand)",
-      "lat": 39.110433,
-      "lon": -94.581349
+      "name": "River Market (Grand Ave)",
+      "lat": 39.109907,
+      "lon": -94.58087,
+      "stopIds": ["1599"]
+    },
+    {
+      "name": "River Market (3rd St)",
+      "lat": 39.113154,
+      "lon": -94.578587,
+      "stopIds": ["1600"]
     },
     {
       "name": "Delaware (4th & Delaware)",
       "lat": 39.108848,
-      "lon": -94.584417
+      "lon": -94.584417,
+      "stopIds": ["1601"]
     },
     {
       "name": "City Market (5th & Walnut St)",
       "lat": 39.108477,
-      "lon": -94.581756
+      "lon": -94.581756,
+      "stopIds": ["1615"]
     },
     {
       "name": "North Loop (7th & Main St)",
       "lat": 39.105243,
-      "lon": -94.583031
+      "lon": -94.583031,
+      "stopIds": ["1602", "1614"]
     },
     {
       "name": "Library (9th & Main St)",
       "lat": 39.103206,
-      "lon": -94.583088
+      "lon": -94.583088,
+      "stopIds": ["1603", "1613"]
     },
     {
       "name": "Metro Center (12th & Main St)",
       "lat": 39.099977,
-      "lon": -94.583179
+      "lon": -94.583179,
+      "stopIds": ["1604", "1612"]
     },
     {
       "name": "Power & Light (14th & Main St)",
       "lat": 39.096999,
-      "lon": -94.583324
+      "lon": -94.583324,
+      "stopIds": ["1605", "1611"]
     },
     {
       "name": "Kauffman Center (16th & Main St)",
       "lat": 39.094546,
-      "lon": -94.583452
+      "lon": -94.583452,
+      "stopIds": ["1606", "1610"]
     },
     {
       "name": "Crossroads (19th & Main St)",
       "lat": 39.090431,
-      "lon": -94.583644
+      "lon": -94.583644,
+      "stopIds": ["1607", "1609"]
     },
     {
       "name": "Union Station (Pershing & Main St)",
       "lat": 39.084677,
-      "lon": -94.584052
+      "lon": -94.584052,
+      "stopIds": ["1608", "1619"]
     },
     {
       "name": "WWI Museum & Memorial (27th & Main)",
       "lat": 39.078524,
-      "lon": -94.584533
+      "lon": -94.584533,
+      "stopIds": ["1620", "1811"]
     },
     {
       "name": "Union Hill (31st & Main St)",
       "lat": 39.071037,
-      "lon": -94.58531
+      "lon": -94.58531,
+      "stopIds": ["1621", "1812"]
     },
     {
       "name": "Armour (35th & Main St)",
       "lat": 39.063755,
-      "lon": -94.585673
+      "lon": -94.585673,
+      "stopIds": ["1622", "1813"]
     },
     {
       "name": "Westport (39th & Main St)",
       "lat": 39.056372,
-      "lon": -94.586109
+      "lon": -94.586109,
+      "stopIds": ["1623", "1814"]
     },
     {
       "name": "Southmoreland (43rd & Main St)",
       "lat": 39.049319,
-      "lon": -94.586533
+      "lon": -94.586533,
+      "stopIds": ["1627", "1815"]
     },
     {
       "name": "Art Museums (45th & Main St)",
       "lat": 39.045914,
-      "lon": -94.586741
+      "lon": -94.586741,
+      "stopIds": ["1628", "1816"]
     },
     {
       "name": "Plaza (Cleaver & Brookside)",
       "lat": 39.041626,
-      "lon": -94.586367
+      "lon": -94.586367,
+      "stopIds": ["1629", "1817"]
     },
     {
       "name": "UMKC (51st & Brookside Blvd)",
       "lat": 39.035832,
-      "lon": -94.584119
+      "lon": -94.584119,
+      "stopIds": ["1630"]
     }
   ]
 }

@@ -8,9 +8,12 @@ function required(name: string): string {
   return value;
 }
 
+const gtfsRtBaseUrl = required("GTFS_RT_BASE_URL");
+
 export const config = {
   swiftlyApiKey: required("SWIFTLY_API_KEY"),
-  gtfsRtUrl: required("GTFS_RT_URL"),
+  gtfsRtVehiclePositionsUrl: `${gtfsRtBaseUrl}/gtfs-rt-vehicle-positions`,
+  gtfsRtTripUpdatesUrl: `${gtfsRtBaseUrl}/gtfs-rt-trip-updates`,
   streetcarRouteId: required("STREETCAR_ROUTE_ID"),
   pollIntervalMs: Number(process.env.POLL_INTERVAL_MS ?? 15000),
   databaseUrl: required("DATABASE_URL"),

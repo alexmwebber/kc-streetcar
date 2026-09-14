@@ -83,12 +83,18 @@ npm run dev
 
 The app will be available at `http://localhost:5173`.
 
+### Stop the backend when you're done developing
+
+Swiftly rate-limits the GTFS-RT feed key to **180 requests / 15 minutes**. Production alone already uses about two-thirds of that: it polls both feeds (`gtfs-rt-vehicle-positions` + `gtfs-rt-trip-updates`) every 15s, which is 2 requests × 60 poll cycles = **120 requests / 15 min**. Leaving a local `npm run dev` backend running at the same time (same API key) adds another ~120 requests/15min on top — comfortably over the limit.
+
+**Stop the local backend (`Ctrl+C`, or kill the process if it's running in the background) once you're done testing**, rather than leaving it polling unattended.
+
 ## Environment Variables
 
 See `backend/.env.example` for the full list. Key ones:
 
-- `SWIFTLY_API_KEY` — auth header value for the Swiftly GTFS-RT endpoint
-- `GTFS_RT_URL` — the feed URL (defaults to the KCATA vehicle-positions endpoint)
+- `SWIFTLY_API_KEY` — auth header value for the Swiftly GTFS-RT endpoints
+- `GTFS_RT_BASE_URL` — base URL for KCATA's Swiftly feeds; `/gtfs-rt-vehicle-positions` and `/gtfs-rt-trip-updates` are appended to it
 - `STREETCAR_ROUTE_ID` — the GTFS route_id to filter for (currently assumed `601` — verify against KCATA's `routes.txt`)
 - `DATABASE_URL` — PostgreSQL connection string
 - `POLL_INTERVAL_MS` — how often to poll the feed (default 15000)
