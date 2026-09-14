@@ -16,6 +16,14 @@ export const config = {
   databaseUrl: required("DATABASE_URL"),
   port: Number(process.env.PORT ?? 3001),
   // "*" locally so the Vite dev server (any port) can call the API freely.
-  // Set to the deployed frontend's origin in production.
-  corsOrigin: process.env.CORS_ORIGIN ?? "*",
+  // In production, CORS_ORIGIN holds the deployed frontend's origin(s) -
+  // comma-separated if there's more than one (e.g. a custom domain plus the
+  // platform's default hostname).
+  corsOrigin: parseCorsOrigin(process.env.CORS_ORIGIN),
 };
+
+function parseCorsOrigin(value: string | undefined): string | string[] {
+  if (!value) return "*";
+  const origins = value.split(",").map((origin) => origin.trim());
+  return origins.length === 1 ? origins[0] : origins;
+}

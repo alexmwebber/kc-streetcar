@@ -33,7 +33,7 @@ jobs:
           npm ci
           npm run build
         env:
-          VITE_API_BASE_URL: https://kc-streetcar-api.mangoground-3203ab82.eastus2.azurecontainerapps.io
+          VITE_API_BASE_URL: https://api.streetcartracker.com
       - name: Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
