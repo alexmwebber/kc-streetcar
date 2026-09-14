@@ -1,12 +1,15 @@
-import { useEffect, useState } from "react";
+import type { Map as LeafletMap } from "leaflet";
+import { useEffect, useRef, useState } from "react";
 import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip } from "react-leaflet";
 import { fetchLivePositions } from "../api/vehicles.js";
 import type { VehiclePosition } from "../types/vehicle.js";
 import { bearingToCompass, createVehicleIcon } from "./VehicleMarker.js";
 import PollProgress from "./PollProgress.js";
 import ThemeToggle from "./ThemeToggle.js";
+import UserLocationMarker from "./UserLocationMarker.js";
 import { nearestPointOnRoute } from "../lib/routeMatch.js";
 import { useAnimatedVehicles } from "../lib/useAnimatedVehicles.js";
+import { useGeolocation } from "../lib/useGeolocation.js";
 import { useTheme } from "../lib/useTheme.js";
 import streetcarRoute from "../data/streetcarRoute.json";
 
@@ -39,6 +42,16 @@ export default function StreetcarMap() {
   const [pollCycle, setPollCycle] = useState(0);
   const [theme, toggleTheme] = useTheme();
   const animatedVehicles = useAnimatedVehicles(vehicles);
+  const location = useGeolocation();
+  const mapRef = useRef<LeafletMap | null>(null);
+  const hasCenteredRef = useRef(false);
+
+  useEffect(() => {
+    if (location && mapRef.current && !hasCenteredRef.current) {
+      mapRef.current.flyTo([location.lat, location.lon], 17);
+      hasCenteredRef.current = true;
+    }
+  }, [location]);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,6 +81,7 @@ export default function StreetcarMap() {
       <PollProgress intervalMs={POLL_INTERVAL_MS} cycle={pollCycle} color={ROUTE_COLOR} />
       <ThemeToggle theme={theme} onToggle={toggleTheme} />
       <MapContainer
+        ref={mapRef}
         bounds={ROUTE_BOUNDS}
         boundsOptions={{ padding: [24, 24] }}
         style={{ height: "100%", width: "100%" }}
@@ -123,6 +137,8 @@ export default function StreetcarMap() {
             </Popup>
           </Marker>
         ))}
+
+        {location && <UserLocationMarker location={location} />}
       </MapContainer>
     </div>
   );
