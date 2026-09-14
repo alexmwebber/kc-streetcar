@@ -9,17 +9,25 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Install postgresql-client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
-
       # Uses Neon's *direct* (non-pooled) connection string - PgBouncer's
       # transaction pooling mode (used by the app's -pooler connection)
       # doesn't reliably support everything pg_dump relies on.
+      #
+      # pg_dump must be the same major version as the server (Neon runs
+      # Postgres 18) - Ubuntu's default apt package is older and refuses
+      # to dump, so this uses the matching official Postgres image instead
+      # of installing a client via apt. Bump the tag if Neon's version
+      # ever changes.
+      #
+      # set -euo pipefail matters here: without it, a failing pg_dump
+      # piped into gzip still exits 0 (gzip's own exit code), silently
+      # producing a tiny, useless "successful" backup.
       - name: Dump database
         env:
           DATABASE_URL: ${{ secrets.NEON_DIRECT_DATABASE_URL }}
         run: |
-          pg_dump "$DATABASE_URL" --no-owner --no-privileges | gzip > backup-$(date +%Y%m%d-%H%M%S).sql.gz
+          set -euo pipefail
+          docker run --rm postgres:18-alpine pg_dump "$DATABASE_URL" --no-owner --no-privileges | gzip > backup-$(date +%Y%m%d-%H%M%S).sql.gz
 
       - name: Upload backup artifact
         uses: actions/upload-artifact@v4
