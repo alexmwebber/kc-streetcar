@@ -6,8 +6,9 @@ This document describes how KC Streetcar Tracker is hosted and deployed. For the
 
 | Thing | Value |
 |---|---|
-| Frontend | https://proud-island-0a037380f.6.azurestaticapps.net |
-| Backend API | https://kc-streetcar-api.mangoground-3203ab82.eastus2.azurecontainerapps.io |
+| Frontend | https://streetcartracker.com (default hostname https://proud-island-0a037380f.6.azurestaticapps.net still works) |
+| Backend API | https://api.streetcartracker.com (default hostname https://kc-streetcar-api.mangoground-3203ab82.eastus2.azurecontainerapps.io still works) |
+| Domain registrar | Cloudflare (`streetcartracker.com`), DNS only, not proxied |
 | Resource group | `kc-streetcar` (East US 2) |
 | Static Web App | `kc-streetcar-web` |
 | Container App | `kc-streetcar-api` (Consumption plan, `kc-streetcar-env` environment) |
@@ -79,7 +80,20 @@ The frontend pipeline's authentication is simpler: a deployment token scoped to 
 | `STREETCAR_ROUTE_ID` | plain | `601` |
 | `POLL_INTERVAL_MS` | plain | `15000` |
 | `PORT` | plain | `3001` |
-| `CORS_ORIGIN` | plain | `https://proud-island-0a037380f.6.azurestaticapps.net` (defaults to `*` if unset - see [config.ts](../backend/src/config.ts)) |
+| `CORS_ORIGIN` | plain | `https://streetcartracker.com,https://proud-island-0a037380f.6.azurestaticapps.net` (comma-separated list; defaults to `*` if unset - see [config.ts](../backend/src/config.ts)) |
+
+## Custom domain
+
+Registered at Cloudflare, DNS records set to "DNS only" (not proxied) so Azure's own TLS certificates and domain validation work directly against the origin.
+
+| Record | Type | Value | Purpose |
+|---|---|---|---|
+| `@` (apex) | TXT | Azure-generated token | Ownership validation for `streetcartracker.com` (frontend) |
+| `@` (apex) | CNAME | `proud-island-0a037380f.6.azurestaticapps.net` | Routes the apex to the Static Web App (Cloudflare flattens root CNAMEs) |
+| `asuid.api` | TXT | Azure-generated token(s) | Ownership/domain-control validation for `api.streetcartracker.com` (backend) |
+| `api` | CNAME | `kc-streetcar-api.mangoground-3203ab82.eastus2.azurecontainerapps.io` | Routes `api.streetcartracker.com` to the Container App |
+
+The frontend domain uses TXT validation (`az staticwebapp hostname set --validation-method dns-txt-token`), the only method Static Web Apps supports for apex domains. The backend's managed certificate uses **CNAME** validation (`az containerapp hostname bind --validation-method CNAME`), not TXT - see the failure mode below for why.
 
 ## Making a change
 
@@ -120,6 +134,7 @@ For the frontend, `npm run dev` in `frontend/` uses the Vite dev proxy to `local
 - `permission_denied: write_package` when pushing to ghcr.io - the package is not linked for this repository's Actions access. Resolve via package Settings → Manage Actions access → add the repository with Write access.
 - `AADSTS700213: No matching federated identity record...` - the federated credential's subject does not match the value GitHub presents (for example, after a repository rename or transfer, or a change to GitHub's claim format). Resolve by reading the exact subject from the error and updating it with `az ad app federated-credential update`.
 - An unescaped `&` (or `|`, `^`, `%`) in a value passed to `az` from PowerShell - split by the `cmd.exe` layer `az.cmd` runs through, corrupting the command. Resolve by placing the value in a JSON/YAML file and passing it via `--parameters @file`, `--body @file`, or `--yaml @file` instead of inlining it.
+- `az containerapp hostname bind --validation-method TXT` fails with `Operation timed out` - the domain-control-validation window for a managed certificate's TXT check is shorter than it appears (the "up to 20 minutes" message describes total issuance time, not the DCV window), typically too short for a human to read the token, add it at the DNS provider, and confirm. Each attempt also creates a new managed-certificate resource with its own token, so a failed attempt's certificate must be deleted (`az containerapp env certificate delete`) before retrying. If a CNAME for the hostname already points at the Container App, use `--validation-method CNAME` instead - Azure validates against the existing record immediately, with nothing new to add.
 
 ## Cost
 
