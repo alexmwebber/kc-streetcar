@@ -135,6 +135,17 @@ For the frontend, `npm run dev` in `frontend/` uses the Vite dev proxy to `local
 - `AADSTS700213: No matching federated identity record...` - the federated credential's subject does not match the value GitHub presents (for example, after a repository rename or transfer, or a change to GitHub's claim format). Resolve by reading the exact subject from the error and updating it with `az ad app federated-credential update`.
 - An unescaped `&` (or `|`, `^`, `%`) in a value passed to `az` from PowerShell - split by the `cmd.exe` layer `az.cmd` runs through, corrupting the command. Resolve by placing the value in a JSON/YAML file and passing it via `--parameters @file`, `--body @file`, or `--yaml @file` instead of inlining it.
 - `az containerapp hostname bind --validation-method TXT` fails with `Operation timed out` - the domain-control-validation window for a managed certificate's TXT check is shorter than it appears (the "up to 20 minutes" message describes total issuance time, not the DCV window), typically too short for a human to read the token, add it at the DNS provider, and confirm. Each attempt also creates a new managed-certificate resource with its own token, so a failed attempt's certificate must be deleted (`az containerapp env certificate delete`) before retrying. If a CNAME for the hostname already points at the Container App, use `--validation-method CNAME` instead - Azure validates against the existing record immediately, with nothing new to add.
+- A pipeline step shaped like `command-that-can-fail | gzip > file` (or any `cmd1 | cmd2`) reports the exit code of the *last* command, not the first. A failing `pg_dump` piped into `gzip` still "succeeds" and uploads a small, useless artifact. Always add `set -euo pipefail` to multi-line `run:` steps that pipe commands together.
+
+## Backups
+
+**[backup-db.yml](../.github/workflows/backup-db.yml)** runs `pg_dump` daily (`0 9 * * *` UTC) against Neon's direct (non-pooled) connection - PgBouncer's transaction pooling mode doesn't reliably support everything `pg_dump` needs - and uploads the gzipped result as a GitHub Actions artifact (30-day retention). Also runnable on demand via `workflow_dispatch`.
+
+`pg_dump` must match the server's major Postgres version (Neon currently runs 18); the workflow runs it from the official `postgres:18-alpine` Docker image rather than an apt-installed client, since Ubuntu's default package lags behind. Bump that image tag if Neon's version ever changes.
+
+A green run is not proof of a good backup - check that the artifact's size is reasonable for the amount of data, not just that the step succeeded (see the failure mode above).
+
+Storage is GitHub Actions artifacts for now, chosen for zero additional accounts or credentials given the small data volume. Cloudflare R2 (S3-compatible, already have the account) is the natural upgrade if that stops being true.
 
 ## Cost
 
