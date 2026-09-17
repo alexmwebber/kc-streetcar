@@ -3146,14 +3146,14 @@
     },
     {
       "name": "River Market (Grand Ave)",
-      "lat": 39.109907,
-      "lon": -94.58087,
+      "lat": 39.11054,
+      "lon": -94.58105,
       "stopIds": ["1599"]
     },
     {
       "name": "River Market (3rd St)",
-      "lat": 39.113154,
-      "lon": -94.578587,
+      "lat": 39.11027,
+      "lon": -94.58129,
       "stopIds": ["1600"]
     },
     {
