@@ -62,8 +62,8 @@ function StopMarker({ stop, arrivals }: { stop: { name: string; lat: number; lon
   return (
     <CircleMarker
       center={[stop.lat, stop.lon]}
-      radius={4}
-      pathOptions={{ color: ROUTE_COLOR, weight: 2, fillColor: "#ffffff", fillOpacity: 1 }}
+      radius={6}
+      pathOptions={{ color: ROUTE_COLOR, weight: 3, fillColor: "#ffffff", fillOpacity: 1 }}
       eventHandlers={{
         mouseover: (e) => e.target.openPopup(),
         mouseout: (e) => {
@@ -168,7 +168,7 @@ export default function StreetcarMap() {
         />
 
         {ROUTE_PATHS.map((path, i) => (
-          <Polyline key={i} positions={path} pathOptions={{ color: ROUTE_COLOR, weight: 4, opacity: 0.6 }} />
+          <Polyline key={i} positions={path} pathOptions={{ color: ROUTE_COLOR, weight: 6, opacity: 0.6 }} />
         ))}
 
         {ROUTE_STOPS.map((stop) => (
