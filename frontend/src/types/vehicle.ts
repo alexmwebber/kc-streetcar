@@ -3,6 +3,7 @@ export interface VehiclePosition {
   vehicle_label: string | null;
   trip_id: string | null;
   route_id: string;
+  direction_id: number | null;
   latitude: number;
   longitude: number;
   bearing: number | null;

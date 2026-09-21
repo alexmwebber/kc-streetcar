@@ -1,13 +1,5 @@
 import type { StopPrediction } from "../types/prediction.js";
-
-// KC Streetcar is a single out-and-back line between these two termini.
-// Empirically, direction_id 0 always progresses toward Riverfront and 1
-// toward UMKC (checked against a live trip-updates sample) - if Swiftly ever
-// flips this, swap the two strings below.
-const DIRECTION_LABELS: Record<number, string> = {
-  0: "Toward Riverfront",
-  1: "Toward UMKC",
-};
+import { DIRECTION_LABELS } from "./tripDirection.js";
 
 export interface StopArrival {
   label: string;
