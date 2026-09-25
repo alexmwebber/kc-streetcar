@@ -3,6 +3,16 @@
   --chrome-bg: rgba(255, 255, 255, 0.9);
   --chrome-bg-hover: #ffffff;
   --chrome-fg: #333333;
+
+  /* Analysis page. Ink follows the text tokens; data colour lives in
+     lib/speedScale.ts so the ramps stay in one place with their validation notes. */
+  --surface: #eef1f3;
+  --surface-raised: #ffffff;
+  --ink: #23262b;
+  --ink-muted: #6b7078;
+  --hairline: #dfe3e7;
+  --grid: #d8dce1;
+  --accent: #0693e3;
 }
 
 html,
@@ -50,6 +60,14 @@ body {
 }
 
 .theme-toggle {
+  /* Overrides the `absolute` in the shared pill rule above. The toggle used to
+     live inside StreetcarMap's position:relative wrapper; now that it's app-level
+     chrome in .app-shell (which is unpositioned) `absolute` would resolve against
+     the initial containing block and pin it to the bottom of the *document* -
+     fine on the viewport-height map page, but on the scrolling analysis page it
+     lands on top of the legend. Fixed keeps it in the viewport corner on both.
+     PollProgress keeps `absolute`: it's still map chrome inside that wrapper. */
+  position: fixed;
   bottom: 12px;
   left: 12px;
   padding: 0;
@@ -107,4 +125,575 @@ body {
 
 [data-theme="dark"] .leaflet-popup-close-button {
   color: #b8bcc2;
+}
+
+/* ── Dark-mode tokens for the analysis page ─────────────────────────────────
+   Selected steps, not an automatic flip of the light values. */
+[data-theme="dark"] {
+  --surface: #16181c;
+  --surface-raised: #202327;
+  --ink: #e8e8e8;
+  --ink-muted: #9aa0a8;
+  --hairline: #2c3036;
+  --grid: #2c3036;
+}
+
+/* ── App shell ──────────────────────────────────────────────────────────────
+   The nav + routed content stack vertically and fill the viewport. min-height:0
+   on .app-main is load-bearing: without it the flex item refuses to shrink below
+   its content and Leaflet measures a zero-height container. */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.app-main {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.nav-bar {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.nav-brand {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+  margin-right: 4px;
+}
+
+.nav-link {
+  font-size: 13px;
+  text-decoration: none;
+  color: var(--ink-muted);
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-link:hover {
+  color: var(--ink);
+}
+
+.nav-link-active {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+/* ── Analysis page ──────────────────────────────────────────────────────── */
+.analysis-page {
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px 20px 48px;
+  box-sizing: border-box;
+  background: var(--surface);
+}
+
+.analysis-header {
+  margin-bottom: 16px;
+}
+
+.analysis-title {
+  margin: 0 0 4px;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.analysis-sub,
+.analysis-warning,
+.analysis-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.analysis-warning {
+  margin-top: 6px;
+  color: #b06a1f;
+}
+
+.analysis-error {
+  margin: 10px 0;
+  color: #c0392b;
+}
+
+/* Filters: one left-aligned row above everything they scope. */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  background: var(--surface-raised);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+}
+
+.filter-group {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.filter-label {
+  display: block;
+  padding: 0 0 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.seg {
+  padding: 5px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink-muted);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--hairline);
+  cursor: pointer;
+}
+
+.seg:last-child {
+  border-right: none;
+}
+
+.seg:hover:not(.seg-active) {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.seg-active {
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+fieldset:disabled .seg {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Stat tiles: proportional figures, not tabular — at this size tabular-nums
+   makes a value like 121 look loose. */
+.stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 132px;
+  padding: 10px 14px;
+  background: var(--surface-raised);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.stat-note {
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+.analysis-body {
+  transition: opacity 120ms ease;
+}
+
+/* The route is ~10 km north-south inside about 1 km east-west, so a wide, short
+   map has to zoom out until the line is a hairline in a sea of suburbs. Give the
+   map a tall narrow column matching that aspect and put the chart beside it. */
+.analysis-columns {
+  display: grid;
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.map-column {
+  position: sticky;
+  top: 0;
+}
+
+.ribbon-wrap {
+  position: relative;
+  height: 760px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Expanded: the grid collapses to a single column so the map spans the full page
+   width and the profile chart flows underneath it. Everything above - header,
+   filters, stat tiles - stays put; this only reflows the two columns below them. */
+.analysis-columns-expanded {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.map-column-expanded {
+  /* Sticky is right for a short column beside a long chart, but wrong once the
+     map is the full width - it would pin the map over the chart while scrolling. */
+  position: static;
+  /* Map and legend sit side by side once there's width to spare. flex-start so
+     the legend panel is only as tall as its content rather than stretching down
+     the whole 82vh of map. */
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.map-column-expanded .ribbon-wrap {
+  flex: 1 1 auto;
+  /* Without min-width:0 the flex item refuses to shrink past the map's intrinsic
+     width and pushes the legend off the edge. */
+  min-width: 0;
+  height: 82vh;
+}
+
+/* Beside the map the legend becomes a narrow panel, so its items stack instead of
+   running in a wrapped row. */
+.map-column-expanded .legend {
+  flex: 0 0 210px;
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.map-column-expanded .legend-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.map-column-expanded .legend-caption {
+  margin-bottom: 1px;
+}
+
+.map-column-expanded .legend-note {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+  max-width: none;
+}
+
+/* Above Leaflet's own controls (z-index 1000) so it can't end up underneath. */
+.map-expand-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--chrome-fg);
+  background: var(--chrome-bg);
+  border: none;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.map-expand-btn:hover {
+  background: var(--chrome-bg-hover);
+}
+
+@media (max-width: 900px) {
+  .analysis-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* :not() excludes the expanded state deliberately. These rules come later in the
+     file at equal specificity, so a bare `.map-column`/`.ribbon-wrap` here would
+     override the expanded rules above and break expanding on narrow screens. */
+  .map-column:not(.map-column-expanded) {
+    position: static;
+  }
+
+  .map-column:not(.map-column-expanded) .ribbon-wrap {
+    height: 420px;
+  }
+
+  /* No room for a side panel at this width - put the legend back under the map. */
+  .map-column-expanded {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .map-column-expanded .ribbon-wrap {
+    height: 60vh;
+  }
+
+  .map-column-expanded .legend {
+    flex: 0 0 auto;
+  }
+
+  .map-column-expanded .legend-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 14px;
+  }
+}
+
+[data-theme="dark"] .leaflet-container {
+  background: #16181c;
+}
+
+.ribbon-tooltip {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.tooltip-muted {
+  color: var(--ink-muted);
+}
+
+/* ── Legend ─────────────────────────────────────────────────────────────── */
+.legend {
+  margin: 10px 0 4px;
+}
+
+.legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.legend-caption {
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-swatch {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.legend-line {
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.legend-note {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  max-width: 68ch;
+}
+
+/* ── Profile chart ──────────────────────────────────────────────────────── */
+.chart-figure {
+  margin: 0;
+  padding: 14px;
+  background: var(--surface-raised);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+}
+
+.chart-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.chart-subtitle {
+  display: block;
+  font-weight: 400;
+  font-size: 11.5px;
+  color: var(--ink-muted);
+}
+
+.chart-legend {
+  display: flex;
+  gap: 16px;
+  margin: 8px 0 2px;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none;
+}
+
+/* Solid hairlines, one step off the surface — never dashed. */
+.chart-grid {
+  stroke: var(--grid);
+  stroke-width: 1;
+}
+
+.chart-crosshair {
+  stroke: var(--ink-muted);
+  stroke-width: 1;
+  opacity: 0.55;
+}
+
+.chart-tick,
+.chart-axis-label {
+  fill: var(--ink-muted);
+  font-size: 11px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  min-height: 20px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.readout-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Table view ─────────────────────────────────────────────────────────── */
+.table-view {
+  margin-top: 16px;
+}
+
+.table-toggle {
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--surface-raised);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.table-sort {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 8px;
+}
+
+.table-sort .filter-label {
+  padding: 0;
+}
+
+.table-scroll {
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  background: var(--surface-raised);
+}
+
+.data-table th,
+.data-table td {
+  padding: 6px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--hairline);
+  white-space: nowrap;
+}
+
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-raised);
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+/* tabular-nums here, where digits align down a column. */
+.data-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+
+/* Stop rules on the profile chart: present enough to align the troughs against,
+   recessive enough that they never compete with the data lines.
+   Dotted, unlike the solid y-axis gridlines, because these are location
+   annotations rather than scale lines - the two families of rule should not read
+   as the same thing. Dotting removes a good deal of ink, so the stroke steps up
+   from --grid to a muted ink to keep the net presence slightly stronger. */
+.chart-stopline {
+  stroke: var(--ink-muted);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  opacity: 0.4;
+}
+
+.chart-stoplabel {
+  font-size: 10px;
+  /* Names are proportional text, not a column of figures. */
+  font-variant-numeric: normal;
 }

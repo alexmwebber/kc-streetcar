@@ -6,13 +6,12 @@ import type { StopPrediction } from "../types/prediction.js";
 import type { VehiclePosition } from "../types/vehicle.js";
 import { bearingToCompass, createVehicleIcon } from "./VehicleMarker.js";
 import PollProgress from "./PollProgress.js";
-import ThemeToggle from "./ThemeToggle.js";
 import UserLocationMarker from "./UserLocationMarker.js";
 import { nearestPointOnRoute } from "../lib/routeMatch.js";
 import { formatEta, nextArrivals, type StopArrival } from "../lib/stopArrivals.js";
 import { useAnimatedVehicles } from "../lib/useAnimatedVehicles.js";
 import { useGeolocation } from "../lib/useGeolocation.js";
-import { useTheme } from "../lib/useTheme.js";
+import type { Theme } from "../lib/useTheme.js";
 import streetcarRoute from "../data/streetcarRoute.json";
 
 const POLL_INTERVAL_MS = 15000;
@@ -91,15 +90,26 @@ const ROUTE_BOUNDS: [[number, number], [number, number]] = [
   [Math.max(...ALL_ROUTE_POINTS.map((p) => p[0])), Math.max(...ALL_ROUTE_POINTS.map((p) => p[1]))],
 ];
 
-export default function StreetcarMap() {
+interface StreetcarMapProps {
+  theme: Theme;
+}
+
+export default function StreetcarMap({ theme }: StreetcarMapProps) {
   const [vehicles, setVehicles] = useState<VehiclePosition[]>([]);
   const [predictions, setPredictions] = useState<StopPrediction[]>([]);
   const [pollCycle, setPollCycle] = useState(0);
-  const [theme, toggleTheme] = useTheme();
   const animatedVehicles = useAnimatedVehicles(vehicles);
   const location = useGeolocation();
   const mapRef = useRef<LeafletMap | null>(null);
   const hasCenteredRef = useRef(false);
+
+  // The map mounts inside a flex column whose height resolves after layout, so
+  // Leaflet can measure zero on the first paint. Re-measure once the browser has
+  // settled. Also covers the remount when navigating back from /analysis.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => mapRef.current?.invalidateSize());
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   useEffect(() => {
     if (location && mapRef.current && !hasCenteredRef.current) {
@@ -141,9 +151,8 @@ export default function StreetcarMap() {
   }, []);
 
   return (
-    <div data-theme={theme} style={{ position: "relative", height: "100vh", width: "100%", colorScheme: theme }}>
+    <div style={{ position: "relative", height: "100%", width: "100%" }}>
       <PollProgress intervalMs={POLL_INTERVAL_MS} cycle={pollCycle} color={ROUTE_COLOR} />
-      <ThemeToggle theme={theme} onToggle={toggleTheme} />
       <MapContainer
         ref={mapRef}
         bounds={ROUTE_BOUNDS}
