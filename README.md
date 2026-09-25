@@ -89,6 +89,57 @@ Swiftly rate-limits the GTFS-RT feed key to **180 requests / 15 minutes**. Produ
 
 **Stop the local backend (`Ctrl+C`, or kill the process if it's running in the background) once you're done testing**, rather than leaving it polling unattended.
 
+## Analysis
+
+`/analysis` shows where the streetcar runs fast and slow, from the stored history: a
+speed heatmap along the route, a speed-vs-distance profile, and date-range /
+time-of-day / direction filters.
+
+Every position row carries its position along the route (`dist_along_route_m`),
+computed at insert time from the geometry in `backend/src/data/streetcarRoute.json`,
+so the heatmap is a plain `GROUP BY` rather than a re-projection of the whole table.
+
+Endpoints:
+
+- `GET /api/analysis/speed-by-distance` — binned mean speed per stretch of route,
+  including the drawable coordinates for each bin (the page owns no geometry of its
+  own, so the analysis map and the live map share no code)
+- `GET /api/analysis/coverage` — how much history exists, and how much of it has been
+  located onto the route
+
+Two things to know when reading the page:
+
+- **Terminal layovers are excluded.** A stationary run over two minutes is a vehicle
+  parked at the end of the line, not a delay a rider experiences; ordinary stop dwell
+  and red lights are kept. Without this, a single UMKC bin held 13% of all samples at
+  0.6 mph and flattened the colour scale for the entire route.
+- **Speeds above 20 m/s are dropped** as GPS artifacts. The feed reports values up to
+  68.8 mph, which this vehicle cannot do.
+
+### Backfilling historical rows
+
+Rows written before migration `002` have no route position. Fill them once per
+database:
+
+```bash
+cd backend
+npm run migrate            # adds the columns + covering index (idempotent)
+npm run backfill:route     # safe to interrupt and re-run; resumes where it stopped
+```
+
+Then run `VACUUM (ANALYZE) vehicle_positions;` over a **direct** (non-pooled)
+connection — `VACUUM` can't run inside a transaction, and the covering index only
+yields index-only scans once the visibility map is set.
+
+**Against production, migrate before deploying the backend.** `deploy-backend.yml`
+fires on any push touching `backend/**`; if the new insert path reaches production
+before the columns exist, every insert fails and collection stops silently (the
+poller logs the error and continues). Adding nullable columns is backward-compatible
+with the running image, so migrating first is safe.
+
+`npm run check:geometry` warns if the backend and frontend copies of the route JSON
+have drifted apart.
+
 ## Environment Variables
 
 See `backend/.env.example` for the full list. Key ones:
@@ -103,8 +154,8 @@ See `backend/.env.example` for the full list. Key ones:
 
 - [x] Prototype script confirming the GTFS-RT feed is reachable and parseable (`test.py`, kept for reference)
 - [x] Project scaffolded (this commit)
-- [ ] Backend: implement poller loop + DB writes
-- [ ] Backend: implement API endpoints (live positions, history, stats)
-- [ ] Frontend: render live map
-- [ ] Frontend: historical view / charts (e.g. average speed)
-- [ ] Deployment
+- [x] Backend: implement poller loop + DB writes
+- [x] Backend: implement API endpoints (live positions, history, stats)
+- [x] Frontend: render live map
+- [x] Frontend: historical view / charts — speed heatmap at `/analysis`
+- [x] Deployment

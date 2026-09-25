@@ -103,6 +103,100 @@ For a description of how the finished pipeline actually works day to day (not th
 - [x] Cloudflare Email Routing enabled - `contact@streetcartracker.com` forwards to alexmwebber@gmail.com. Cloudflare manages the MX/SPF records for this automatically.
 - [x] DMARC record added: `_dmarc.streetcartracker.com` TXT `v=DMARC1; p=reject; rua=mailto:alexmwebber@gmail.com`. Verified resolving via `Resolve-DnsName ... -Server 1.1.1.1`.
 
+## Phase 7 - Speed / occupancy analysis page rollout (PLANNED, not yet run)
+
+First release that changes the **database schema**, so unlike every previous deploy
+this one is not just "push and watch CI".
+
+### What's needed before starting
+
+| Need | Status |
+|---|---|
+| Azure CLI logged in | Ready - `az account show` returns the subscription as `alexmwebber@gmail.com` |
+| Neon **pooled** URL (migrate + backfill) | **Needed from you** - Neon console, or `az containerapp secret show -n kc-streetcar-api -g kc-streetcar --secret-name db-url` (prints a live credential to the terminal) |
+| Neon **direct** URL (`VACUUM`) | **Needed from you** - Neon console. The `NEON_DIRECT_DATABASE_URL` GitHub secret can't be read back |
+| `gh` CLI | Not installed - trigger/watch Actions from the GitHub web UI, or install it |
+
+Pass the URL as an **inline env var in bash**, e.g.
+`DATABASE_URL="postgresql://...&channel_binding=require" npm run migrate`. Verified
+two things that make this safe:
+
+- `&` survives fine in a double-quoted bash assignment. The Phase 3 gotcha was
+  specific to `az.cmd`, a batch wrapper that re-parses through `cmd.exe`.
+- `dotenv` does **not** override an existing `process.env` value, so the inline var
+  beats `backend/.env`.
+
+So **do not edit `backend/.env`** for this. Leaving a prod URL there would silently
+point the next local `npm run dev` at production.
+
+### Why the order matters
+
+`deploy-backend.yml` fires on any push touching `backend/**`, and the container does
+**not** migrate on boot (`CMD ["node", "dist/src/index.js"]`). If the new image
+reaches prod before the columns exist, every `INSERT` fails - and
+[poller.ts](../backend/src/services/poller.ts) logs the error and keeps going, so
+**data collection stops silently**. Migrate first. Adding nullable columns is
+backward-compatible with the running old image, so migrating early is safe.
+
+Note also that the Static Web Apps workflow has **no `paths:` filter** - it rebuilds
+the frontend on *every* push to `main`. Hence two pushes below: the first ships the
+backend while still building the old frontend (no analysis page yet), so the page
+only appears once its data is complete.
+
+### Steps
+
+1. **Back up.** Run `backup-db.yml` via *Actions → Backup Database → Run workflow*.
+   **Check the artifact is megabytes, not bytes** - a green check is not proof of a
+   good backup (see the Phase 6 gotcha).
+2. **Commit in two parts, push nothing yet:** one commit for `backend/**` + docs, one
+   for `frontend/**`.
+3. **Migrate Neon from the laptop:**
+   `cd backend && DATABASE_URL="<pooled>" npm run migrate`
+   Adds three nullable columns plus the covering index. Idempotent. The
+   `CREATE INDEX` is not `CONCURRENTLY` (migrate.ts sends the file as one implicit
+   transaction), so it takes a `SHARE` lock blocking writes ~1-3 s - one poll cycle.
+4. **Push the backend commit.** Watch `deploy-backend.yml`, then
+   `az containerapp logs show -n kc-streetcar-api -g kc-streetcar --follow` for
+   `[poller] stored N position(s)` with no errors. New rows now carry chainage;
+   historical rows are still NULL.
+5. **Backfill history:**
+   `cd backend && DATABASE_URL="<pooled>" npm run backfill:route`
+   ~300k rows, expect 1-3 min. Safe to interrupt and re-run - `route_offset_m IS NULL`
+   is the progress marker. Safe to run while the poller writes. Doing it *after* the
+   deploy means it also catches anything written during steps 3-4.
+6. **Vacuum over the DIRECT connection:**
+   `VACUUM (ANALYZE) vehicle_positions;` - `VACUUM` can't run inside a transaction,
+   and the covering index only gives index-only scans once the visibility map is set.
+   Skipping this also leaves ~300k dead tuples, which roughly doubles the table on
+   Neon's free tier.
+7. **Push the frontend commit.** The SWA workflow builds and deploys `/analysis`.
+8. **Verify** (below).
+
+### Verification
+
+- `curl https://api.streetcartracker.com/api/analysis/coverage` - `rowCount` should
+  equal `locatedRowCount`. If it doesn't, re-run the backfill.
+- `curl 'https://api.streetcartracker.com/api/analysis/speed-by-distance?bin=100'`
+  - expect ~200 bins.
+- Sanity-check the *shape*, not just the numbers: slow bins at stops and terminals,
+  fast bins mid-block; occupancy near-empty at both terminals and peaking downtown.
+  If the fastest bins are at stops, direction or chainage is inverted.
+- `https://streetcartracker.com/analysis` loads, both Measure toggles work, and the
+  map expands. Deep-link it directly (not just via the nav) to confirm the SPA
+  fallback in `frontend/public/staticwebapp.config.json` is live - check the served
+  page content, not just a 200; SWA returns 200 for its placeholder too.
+- Live map at `/` still works.
+- If `coverage` shows unlocated rows, the page says so itself via a warning banner -
+  it's designed to surface a partial backfill rather than quietly average over it.
+
+### Rollback
+
+The schema change is additive and nullable, so the **old image runs fine against the
+new schema** - rollback is just the container image, with no DB revert:
+`az containerapp revision list -n kc-streetcar-api -g kc-streetcar -o table`, then
+activate the previous revision. The frontend rolls back by reverting the commit and
+pushing. Leave the columns in place either way.
+
 ---
 
 ## What each phase teaches

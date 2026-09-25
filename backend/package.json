@@ -7,7 +7,9 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/src/index.js",
-    "migrate": "tsx db/migrate.ts"
+    "migrate": "tsx db/migrate.ts",
+    "backfill:route": "tsx dev-tools/backfillDistAlongRoute.ts",
+    "check:geometry": "tsx dev-tools/checkRouteGeometry.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",

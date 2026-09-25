@@ -22,6 +22,9 @@ COPY --from=builder /app/dist ./dist
 # tsc doesn't copy .sql files; the migrate script reads them from db/migrations
 # relative to its compiled location (dist/db/migrations).
 COPY db/migrations ./dist/db/migrations
+# Same for .json data files: routeGeometry.ts reads the route alignment at runtime
+# relative to its compiled location (dist/src/lib -> dist/src/data).
+COPY src/data ./dist/src/data
 
 EXPOSE 3001
 CMD ["node", "dist/src/index.js"]
