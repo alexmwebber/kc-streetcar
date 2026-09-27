@@ -16,6 +16,8 @@ export const config = {
   gtfsRtTripUpdatesUrl: `${gtfsRtBaseUrl}/gtfs-rt-trip-updates`,
   streetcarRouteId: required("STREETCAR_ROUTE_ID"),
   pollIntervalMs: Number(process.env.POLL_INTERVAL_MS ?? 15000),
+  // How long positions sit in memory before being written. 
+  flushIntervalMs: Number(process.env.FLUSH_INTERVAL_MS ?? 30 * 60 * 1000),
   databaseUrl: required("DATABASE_URL"),
   port: Number(process.env.PORT ?? 3001),
   // "*" locally so the Vite dev server (any port) can call the API freely.

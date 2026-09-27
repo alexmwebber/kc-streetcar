@@ -2,6 +2,52 @@ import { pool } from "../db/pool.js";
 import { locateOnRoute } from "../lib/routeGeometry.js";
 import type { VehiclePosition } from "../types/vehicle.js";
 
+/**
+ * Write a batch of positions in one statement.
+ *
+ * Replaces one INSERT per vehicle per poll (~52,000/day) with one per flush. The
+ * arrays are passed to unnest rather than built into a VALUES list so the
+ * statement text is constant regardless of batch size - Postgres can reuse the
+ * plan, and there's no risk of blowing the parameter limit on a large catch-up
+ * flush after an outage.
+ */
+export async function insertPositions(positions: VehiclePosition[]): Promise<void> {
+  if (positions.length === 0) return;
+
+  const located = positions.map((p) => ({ p, loc: locateOnRoute(p.latitude, p.longitude) }));
+
+  await pool.query(
+    `INSERT INTO vehicle_positions
+      (vehicle_id, vehicle_label, trip_id, route_id, direction_id,
+       latitude, longitude, bearing, speed_mps, current_status, stop_id,
+       occupancy_percentage, feed_timestamp,
+       dist_along_route_m, route_offset_m, route_path_idx)
+     SELECT * FROM unnest(
+       $1::text[], $2::text[], $3::text[], $4::text[], $5::smallint[],
+       $6::double precision[], $7::double precision[], $8::real[], $9::real[],
+       $10::text[], $11::text[], $12::smallint[], $13::timestamptz[],
+       $14::real[], $15::real[], $16::smallint[])`,
+    [
+      located.map(({ p }) => p.vehicleId),
+      located.map(({ p }) => p.vehicleLabel ?? null),
+      located.map(({ p }) => p.tripId ?? null),
+      located.map(({ p }) => p.routeId),
+      located.map(({ p }) => p.directionId ?? null),
+      located.map(({ p }) => p.latitude),
+      located.map(({ p }) => p.longitude),
+      located.map(({ p }) => p.bearing ?? null),
+      located.map(({ p }) => p.speedMps ?? null),
+      located.map(({ p }) => p.currentStatus ?? null),
+      located.map(({ p }) => p.stopId ?? null),
+      located.map(({ p }) => p.occupancyPercentage ?? null),
+      located.map(({ p }) => p.feedTimestamp),
+      located.map(({ loc }) => loc.distAlongM),
+      located.map(({ loc }) => loc.offsetM),
+      located.map(({ loc }) => loc.pathIdx),
+    ],
+  );
+}
+
 export async function insertPosition(position: VehiclePosition): Promise<void> {
   // Chainage is derived here rather than in the poller so it can't be skipped by a
   // future call site - this repository is the single write path into the table.

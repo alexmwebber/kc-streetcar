@@ -1,21 +1,10 @@
-import { defaultProfileRequest, getProfilePayload, WINDOW_BUCKET_MS } from "./analysisService.js";
+import { cacheKeyFor, defaultProfileRequest, getProfilePayload, normalizeRequest } from "./analysisService.js";
+import { getCached } from "./analysisCache.js";
 
-// Computes the analysis page's default view on a schedule so the common case is
-// always served from memory.
+// Keeps the analysis page's default view in memory so the common case never
+// queries the database.
 //
-// The point is to control WHEN the database is woken rather than leaving it to
-// visitor traffic. A cache miss costs ~5 minutes of billed Neon compute (its
-// scale-to-zero idle timer), so a handful of visitors arriving at scattered times
-// can keep the compute awake most of the day. One scheduled refresh per bucket
-// costs one wake, no matter how many people visit.
-//
-// Once the poller buffers writes and flushes periodically, this should be moved to
-// run right AFTER a flush: the compute is already awake for the flush, so the
-// refresh becomes free rather than costing a wake of its own.
-
-// Warm shortly after boot rather than immediately - let the server finish starting
-// and the first poll happen before adding a multi-second query.
-const INITIAL_DELAY_MS = 30_000;
+// This runs after a flush (see poller.ts)
 
 async function warm(reason: string): Promise<void> {
   const started = Date.now();
@@ -23,16 +12,21 @@ async function warm(reason: string): Promise<void> {
     await getProfilePayload(defaultProfileRequest());
     console.log(`[warmer] default view ready (${reason}) in ${Date.now() - started}ms`);
   } catch (err) {
-    // Non-fatal: a failed warm just means the next visitor pays for the query.
+    // Non-fatal: the next visitor pays for the query instead.
     console.error(`[warmer] failed to warm default view (${reason}):`, err);
   }
 }
 
+/** Refresh the default view only if it isn't already cached - the request window
+ *  snaps to a 6-hour grid, so most flushes find it still valid and do nothing. */
+export async function warmAnalysisIfDue(): Promise<void> {
+  const key = cacheKeyFor(normalizeRequest(defaultProfileRequest()));
+  if (getCached(key)) return;
+  await warm("after flush");
+}
+
+/** One warm at startup so the first visitor after a deploy isn't the one who pays
+ *  to rebuild the cache. Delayed so it doesn't compete with the first poll. */
 export function startAnalysisWarmer(): void {
-  setTimeout(() => {
-    void warm("startup");
-    // Re-warm once per bucket, so the entry is refreshed about when its key rolls
-    // over rather than expiring and waiting for a visitor to pay for it.
-    setInterval(() => void warm("scheduled"), WINDOW_BUCKET_MS);
-  }, INITIAL_DELAY_MS);
+  setTimeout(() => void warm("startup"), 30_000);
 }
