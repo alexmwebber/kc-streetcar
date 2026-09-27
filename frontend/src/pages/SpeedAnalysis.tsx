@@ -126,6 +126,12 @@ export default function SpeedAnalysis({ theme }: SpeedAnalysisProps) {
             </>
           )}
         </p>
+        {profile && (
+          <p className="analysis-sub">
+            Figures as of {new Date(profile.computedAt).toLocaleString()} &mdash; averages are
+            recomputed a few times a day.
+          </p>
+        )}
         {backfillPending && (
           <p className="analysis-warning">
             {(coverage.rowCount - coverage.locatedRowCount).toLocaleString()} rows have not been located onto the route

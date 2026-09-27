@@ -8,9 +8,9 @@ import {
   parseOptionalEnumInt,
   parseTimeOfDay,
 } from "../lib/queryParams.js";
-import { PATH_LENGTHS_M, CANONICAL_PATH, STOP_CHAINAGE } from "../lib/routeGeometry.js";
 import { CACHE_TTL_SECONDS, getCached, setCached } from "../services/analysisCache.js";
-import { getCoverage, getSpeedProfile, SPEED_CAP } from "../services/speedAnalysisRepository.js";
+import { getProfilePayload } from "../services/analysisService.js";
+import { getCoverage } from "../services/speedAnalysisRepository.js";
 
 export const analysisRouter = Router();
 
@@ -30,37 +30,10 @@ analysisRouter.get(
     const [todFrom, todTo] = parseTimeOfDay(req.query.todFrom, req.query.todTo);
     const minSamples = parseIntInRange(req.query.minSamples, "minSamples", 1, 1000, 20);
 
-    const cacheKey = JSON.stringify([
-      "speed-by-distance",
-      from.toISOString(),
-      to.toISOString(),
-      binMeters,
-      direction,
-      todFrom,
-      todTo,
-      minSamples,
-    ]);
+    // Key derivation, window snapping and the cache all live in analysisService so
+    // the background warmer computes the exact same key this route reads.
+    const payload = await getProfilePayload({ from, to, binMeters, direction, todFrom, todTo, minSamples });
 
-    const cached = getCached(cacheKey);
-    if (cached) {
-      res.set("Cache-Control", `public, max-age=${CACHE_TTL_SECONDS}`);
-      res.json(cached);
-      return;
-    }
-
-    const bins = await getSpeedProfile({ from, to, binMeters, direction, todFrom, todTo, minSamples });
-
-    const payload = {
-      binMeters,
-      routeLengthM: PATH_LENGTHS_M[CANONICAL_PATH],
-      speedCapMps: SPEED_CAP,
-      minSamples,
-      stops: STOP_CHAINAGE,
-      filters: { from: from.toISOString(), to: to.toISOString(), todFrom, todTo, direction },
-      bins,
-    };
-
-    setCached(cacheKey, payload);
     res.set("Cache-Control", `public, max-age=${CACHE_TTL_SECONDS}`);
     res.json(payload);
   }),

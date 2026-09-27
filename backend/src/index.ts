@@ -3,6 +3,7 @@ import express from "express";
 import { config } from "./config.js";
 import { analysisRouter } from "./routes/analysis.js";
 import { vehiclesRouter } from "./routes/vehicles.js";
+import { startAnalysisWarmer } from "./services/analysisWarmer.js";
 import { startPoller } from "./services/poller.js";
 
 const app = express();
@@ -17,3 +18,4 @@ app.listen(config.port, () => {
 });
 
 startPoller();
+startAnalysisWarmer();

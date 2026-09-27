@@ -29,6 +29,9 @@ export interface SpeedProfile {
   routeLengthM: number;
   speedCapMps: number;
   minSamples: number;
+  /** When the server computed this. Requests are snapped to a 6-hour grid so the
+   *  figures are deliberately a little behind live. */
+  computedAt: string;
   stops: { name: string; distM: number }[];
   filters: {
     from: string;
