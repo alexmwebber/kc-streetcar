@@ -41,8 +41,6 @@ For a description of how the finished pipeline actually works day to day (not th
 - [x] Ran migrations from the laptop: `cd backend && DATABASE_URL="<neon-url>" npm run migrate` -> "Migrations complete."
 - [x] Verified: `vehicle_positions` exists with all 15 columns and 3 indexes (`_pkey`, `_feed_timestamp`, `_vehicle_time`); 0 rows.
 
-> The connection string was shared in chat during setup. If that's a concern, reset the `neondb_owner` password in the Neon console (Dashboard -> Roles) and update the ACA secret in Phase 3.
-
 ## Phase 2 - Azure foundation
 
 - [x] `az login` (Azure free trial account; remember to upgrade the same subscription to Pay-As-You-Go before the 30-day/$200 trial ends, or resources pause). `az extension add --name containerapp --upgrade` (v1.3.0b5, preview). Registered providers `Microsoft.App` and `Microsoft.OperationalInsights`.

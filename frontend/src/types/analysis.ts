@@ -60,3 +60,26 @@ export interface SpeedProfileQuery {
   todFrom: string | null;
   todTo: string | null;
 }
+
+/** Terminal-to-terminal run times for one direction, bucketed by whole minute. */
+export interface RunTimeDirection {
+  /** GTFS direction_id: 0 toward Riverfront, 1 toward UMKC. */
+  direction: number;
+  n: number;
+  meanS: number;
+  medianS: number;
+  p10S: number;
+  p90S: number;
+  /** `counts[i]` is runs taking [minMinute + i, minMinute + i + 1) minutes. */
+  counts: number[];
+}
+
+export interface RunTimes {
+  computedAt: string;
+  filters: SpeedProfile["filters"];
+  /** Lower edge of the first bucket; shared by every direction so they align. */
+  minMinute: number;
+  directions: RunTimeDirection[];
+}
+
+export type RunTimeQuery = Omit<SpeedProfileQuery, "binMeters">;

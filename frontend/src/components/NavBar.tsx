@@ -1,8 +1,9 @@
 import { NavLink } from "react-router-dom";
 
 const TABS = [
-  { to: "/", label: "Live map" },
-  { to: "/analysis", label: "Speed analysis" },
+  { to: "/", label: "Live Map" },
+  { to: "/analysis", label: "Data Analysis" },
+  { to: "/about", label: "About" },
 ];
 
 export default function NavBar() {

@@ -1,5 +1,5 @@
 import { CircleMarker } from "react-leaflet";
-import type { UserLocation } from "../lib/useGeolocation.js";
+import type { UserLocation } from "../../lib/useGeolocation.js";
 
 const DOT_COLOR = "#4285F4";
 

@@ -9,7 +9,7 @@ import {
   parseTimeOfDay,
 } from "../lib/queryParams.js";
 import { CACHE_TTL_SECONDS, getCached, setCached } from "../services/analysisCache.js";
-import { getProfilePayload } from "../services/analysisService.js";
+import { getProfilePayload, getRunTimePayload } from "../services/analysisService.js";
 import { getCoverage } from "../services/speedAnalysisRepository.js";
 
 export const analysisRouter = Router();
@@ -33,6 +33,23 @@ analysisRouter.get(
     // Key derivation, window snapping and the cache all live in analysisService so
     // the background warmer computes the exact same key this route reads.
     const payload = await getProfilePayload({ from, to, binMeters, direction, todFrom, todTo, minSamples });
+
+    res.set("Cache-Control", `public, max-age=${CACHE_TTL_SECONDS}`);
+    res.json(payload);
+  }),
+);
+
+analysisRouter.get(
+  "/run-times",
+  asyncHandler(async (req, res) => {
+    const to = parseDate(req.query.to, "to", new Date());
+    const from = parseDate(req.query.from, "from", new Date(to.getTime() - 30 * DAY_MS));
+    assertRange(from, to, MAX_RANGE_DAYS);
+
+    const direction = parseOptionalEnumInt(req.query.direction, "direction", [0, 1]);
+    const [todFrom, todTo] = parseTimeOfDay(req.query.todFrom, req.query.todTo);
+
+    const payload = await getRunTimePayload({ from, to, direction, todFrom, todTo });
 
     res.set("Cache-Control", `public, max-age=${CACHE_TTL_SECONDS}`);
     res.json(payload);

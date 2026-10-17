@@ -91,8 +91,8 @@ Swiftly rate-limits the GTFS-RT feed key to **180 requests / 15 minutes**. Produ
 
 ## Analysis
 
-`/analysis` shows where the streetcar runs fast and slow, from the stored history: a
-speed heatmap along the route, a speed-vs-distance profile, and date-range /
+`/analysis` data analysis page, from the stored history: a
+speed (or occupancy) heatmap along the route, a speed-vs-distance profile, and date-range /
 time-of-day / direction filters.
 
 Every position row carries its position along the route (`dist_along_route_m`),

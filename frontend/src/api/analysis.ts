@@ -1,4 +1,4 @@
-import type { Coverage, SpeedProfile, SpeedProfileQuery } from "../types/analysis.js";
+import type { Coverage, RunTimeQuery, RunTimes, SpeedProfile, SpeedProfileQuery } from "../types/analysis.js";
 
 // Empty in local dev: requests stay relative and Vite proxies /api to the backend
 // (see vite.config.ts). In production builds this is set to the deployed API origin
@@ -35,6 +35,25 @@ export async function fetchCoverage(signal?: AbortSignal): Promise<Coverage> {
   const res = await fetch(`${API_BASE_URL}/api/analysis/coverage`, { signal });
   if (!res.ok) {
     throw new Error(`Failed to fetch coverage: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchRunTimes(query: RunTimeQuery, signal?: AbortSignal): Promise<RunTimes> {
+  const params = new URLSearchParams({ from: query.from.toISOString(), to: query.to.toISOString() });
+  if (query.direction !== null) params.set("direction", String(query.direction));
+  if (query.todFrom && query.todTo) {
+    params.set("todFrom", query.todFrom);
+    params.set("todTo", query.todTo);
+  }
+
+  const res = await fetch(`${API_BASE_URL}/api/analysis/run-times?${params}`, { signal });
+  if (!res.ok) {
+    const detail = await res
+      .json()
+      .then((body: { error?: string }) => body.error)
+      .catch(() => undefined);
+    throw new Error(detail ?? `Failed to fetch run times: ${res.status}`);
   }
   return res.json();
 }

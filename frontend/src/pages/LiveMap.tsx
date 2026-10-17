@@ -4,9 +4,9 @@ import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer } from "
 import { fetchLivePositions, fetchStopPredictions } from "../api/vehicles.js";
 import type { StopPrediction } from "../types/prediction.js";
 import type { VehiclePosition } from "../types/vehicle.js";
-import { bearingToCompass, createVehicleIcon } from "./VehicleMarker.js";
-import PollProgress from "./PollProgress.js";
-import UserLocationMarker from "./UserLocationMarker.js";
+import { bearingToCompass, createVehicleIcon } from "../components/liveMap/VehicleMarker.js";
+import PollProgress from "../components/liveMap/PollProgress.js";
+import UserLocationMarker from "../components/liveMap/UserLocationMarker.js";
 import { nearestPointOnRoute } from "../lib/routeMatch.js";
 import { formatEta, nextArrivals, type StopArrival } from "../lib/stopArrivals.js";
 import { useAnimatedVehicles } from "../lib/useAnimatedVehicles.js";
@@ -90,11 +90,11 @@ const ROUTE_BOUNDS: [[number, number], [number, number]] = [
   [Math.max(...ALL_ROUTE_POINTS.map((p) => p[0])), Math.max(...ALL_ROUTE_POINTS.map((p) => p[1]))],
 ];
 
-interface StreetcarMapProps {
+interface LiveMapProps {
   theme: Theme;
 }
 
-export default function StreetcarMap({ theme }: StreetcarMapProps) {
+export default function LiveMap({ theme }: LiveMapProps) {
   const [vehicles, setVehicles] = useState<VehiclePosition[]>([]);
   const [predictions, setPredictions] = useState<StopPrediction[]>([]);
   const [pollCycle, setPollCycle] = useState(0);

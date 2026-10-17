@@ -190,6 +190,77 @@ body {
   border-bottom-color: var(--accent);
 }
 
+/* ── About page ─────────────────────────────────────────────────────────── */
+.about-page {
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px 20px 48px;
+  box-sizing: border-box;
+  background: var(--surface);
+}
+
+.about-content {
+  max-width: 68ch;
+  margin: 0 auto;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.about-title {
+  margin: 0 0 12px;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.about-content a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.about-content a:hover {
+  text-decoration: underline;
+}
+
+.about-section {
+  margin-bottom: 12px;
+  padding: 16px 20px;
+  background: var(--surface-raised);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+}
+
+.about-section p {
+  margin: 0 0 10px;
+}
+
+.about-section > :last-child {
+  margin-bottom: 0;
+}
+
+.about-heading {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.about-note {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.about-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.about-list li + li {
+  margin-top: 4px;
+}
+
+.about-contact {
+  line-height: 1.5;
+}
+
 /* ── Analysis page ──────────────────────────────────────────────────────── */
 .analysis-page {
   height: 100%;
@@ -296,11 +367,12 @@ fieldset:disabled .seg {
 
 /* Stat tiles: proportional figures, not tabular — at this size tabular-nums
    makes a value like 121 look loose. */
+/* Sits under the profile chart, in the chart column. */
 .stat-row {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 14px;
+  margin-top: 16px;
 }
 
 .stat-tile {
@@ -381,7 +453,7 @@ fieldset:disabled .seg {
   /* Without min-width:0 the flex item refuses to shrink past the map's intrinsic
      width and pushes the legend off the edge. */
   min-width: 0;
-  height: 82vh;
+  height: 92vh;
 }
 
 /* Beside the map the legend becomes a narrow panel, so its items stack instead of
@@ -604,6 +676,22 @@ fieldset:disabled .seg {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+/* ── Run-time histogram ─────────────────────────────────────────────────── */
+.runtime-figure {
+  margin-top: 16px;
+}
+
+.runtime-hover-band {
+  fill: var(--ink-muted);
+  opacity: 0.08;
+}
+
+.chart-baseline {
+  stroke: var(--ink-muted);
+  stroke-width: 1;
+  opacity: 0.5;
 }
 
 /* ── Table view ─────────────────────────────────────────────────────────── */

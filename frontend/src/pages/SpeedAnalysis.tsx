@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchCoverage, fetchSpeedProfile } from "../api/analysis.js";
+import { fetchCoverage, fetchRunTimes, fetchSpeedProfile } from "../api/analysis.js";
+import RunTimeHistogram from "../components/analysis/RunTimeHistogram.js";
 import SpeedFilters, { type FilterState } from "../components/analysis/SpeedFilters.js";
 import SpeedLegend from "../components/analysis/SpeedLegend.js";
 import SpeedProfileChart from "../components/analysis/SpeedProfileChart.js";
@@ -7,7 +8,7 @@ import SpeedRibbonMap, { stretchKey } from "../components/analysis/SpeedRibbonMa
 import SpeedTable from "../components/analysis/SpeedTable.js";
 import { METRICS, type Metric } from "../lib/metrics.js";
 import type { Theme } from "../lib/useTheme.js";
-import type { Coverage, SpeedProfile } from "../types/analysis.js";
+import type { Coverage, RunTimes, SpeedProfile } from "../types/analysis.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -33,6 +34,7 @@ export default function SpeedAnalysis({ theme }: SpeedAnalysisProps) {
   const [hoveredChainageM, setHoveredChainageM] = useState<number | null>(null);
   const [mapExpanded, setMapExpanded] = useState(false);
   const [metric, setMetric] = useState<Metric>("speed");
+  const [runTimes, setRunTimes] = useState<RunTimes | null>(null);
 
   // Escape closes the expanded map, which is what anything covering the viewport
   // should do. Bound only while expanded so it can't swallow Escape elsewhere.
@@ -82,6 +84,24 @@ export default function SpeedAnalysis({ theme }: SpeedAnalysisProps) {
     return () => controller.abort();
   }, [filters]);
 
+  // Run times are their own request: they ignore the bin size, so changing it
+  // shouldn't refetch them. Failure is non-fatal - the histogram just stays away.
+  const { days, direction, todFrom, todTo } = filters;
+  useEffect(() => {
+    const controller = new AbortController();
+    const to = new Date();
+    const from = days === null ? new Date(to.getTime() - 399 * DAY_MS) : new Date(to.getTime() - days * DAY_MS);
+
+    fetchRunTimes({ from, to, direction, todFrom, todTo }, controller.signal)
+      .then(setRunTimes)
+      .catch((err: Error) => {
+        if (err.name === "AbortError") return;
+        setRunTimes(null);
+      });
+
+    return () => controller.abort();
+  }, [days, direction, todFrom, todTo]);
+
   // Hovering either view highlights the other. The map keys on an exact bin; the
   // chart only knows an x position, so map that back to whichever bins cover it.
   const hoveredFromChart = useMemo(() => {
@@ -115,7 +135,7 @@ export default function SpeedAnalysis({ theme }: SpeedAnalysisProps) {
   return (
     <div className="analysis-page">
       <header className="analysis-header">
-        <h1 className="analysis-title">{METRICS[metric].pageTitle}</h1>
+        <h1 className="analysis-title">Kansas City Streetcar Data Analysis</h1>
         <p className="analysis-sub">
           Measured from {coverage ? coverage.rowCount.toLocaleString() : "—"} stored
           position reports.
@@ -149,30 +169,6 @@ export default function SpeedAnalysis({ theme }: SpeedAnalysisProps) {
       />
 
       {error && <p className="analysis-error">{error}</p>}
-
-      {stats && (
-        <div className="stat-row">
-          <div className="stat-tile">
-            <span className="stat-label">Overall average</span>
-            <span className="stat-value">{METRICS[metric].format(stats.overall)}</span>
-          </div>
-          <div className="stat-tile">
-            <span className="stat-label">{METRICS[metric].lowLabel}</span>
-            <span className="stat-value">{METRICS[metric].format(METRICS[metric].value(stats.low))}</span>
-            <span className="stat-note">at {(stats.low.chainageM / 1000).toFixed(1)} km</span>
-          </div>
-          <div className="stat-tile">
-            <span className="stat-label">{METRICS[metric].highLabel}</span>
-            <span className="stat-value">{METRICS[metric].format(METRICS[metric].value(stats.high))}</span>
-            <span className="stat-note">at {(stats.high.chainageM / 1000).toFixed(1)} km</span>
-          </div>
-          <div className="stat-tile">
-            <span className="stat-label">Samples</span>
-            <span className="stat-value">{stats.totalN.toLocaleString()}</span>
-            <span className="stat-note">after excluding layover</span>
-          </div>
-        </div>
-      )}
 
       {/* Hold the previous render at reduced opacity while refetching - no skeleton,
           no layout jump. */}
@@ -230,6 +226,30 @@ export default function SpeedAnalysis({ theme }: SpeedAnalysisProps) {
                 onHoverChainage={setHoveredChainageM}
                 metric={metric}
               />
+              {stats && (
+                <div className="stat-row">
+                  <div className="stat-tile">
+                    <span className="stat-label">Overall average</span>
+                    <span className="stat-value">{METRICS[metric].format(stats.overall)}</span>
+                  </div>
+                  <div className="stat-tile">
+                    <span className="stat-label">{METRICS[metric].lowLabel}</span>
+                    <span className="stat-value">{METRICS[metric].format(METRICS[metric].value(stats.low))}</span>
+                    <span className="stat-note">at {(stats.low.chainageM / 1000).toFixed(1)} km</span>
+                  </div>
+                  <div className="stat-tile">
+                    <span className="stat-label">{METRICS[metric].highLabel}</span>
+                    <span className="stat-value">{METRICS[metric].format(METRICS[metric].value(stats.high))}</span>
+                    <span className="stat-note">at {(stats.high.chainageM / 1000).toFixed(1)} km</span>
+                  </div>
+                  <div className="stat-tile">
+                    <span className="stat-label">Samples</span>
+                    <span className="stat-value">{stats.totalN.toLocaleString()}</span>
+                    <span className="stat-note">after excluding layover</span>
+                  </div>
+                </div>
+              )}
+              {runTimes && <RunTimeHistogram runTimes={runTimes} theme={theme} />}
               <SpeedTable profile={profile} />
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { METRICS, type Metric } from "../../lib/metrics.js";
-import { DIRECTION_LABELS, TOWARD_RIVERFRONT, TOWARD_UMKC } from "../../lib/tripDirection.js";
+import { SERIES_COLORS } from "../../lib/seriesColors.js";
+import { DIRECTION_LABELS } from "../../lib/tripDirection.js";
 import type { Theme } from "../../lib/useTheme.js";
 import type { SpeedProfile } from "../../types/analysis.js";
 
@@ -18,13 +19,6 @@ const HEIGHT = 300;
 const PAD = { top: 26, right: 16, bottom: 104, left: 46 };
 const PLOT_W = WIDTH - PAD.left - PAD.right;
 const PLOT_H = HEIGHT - PAD.top - PAD.bottom;
-
-// Two series, so they get the categorical slots 1 and 2 - distinct hues, not steps
-// of the speed ramp (which encodes magnitude and would collide in meaning).
-const SERIES_COLORS: Record<Theme, Record<number, string>> = {
-  light: { [TOWARD_UMKC]: "#2a78d6", [TOWARD_RIVERFRONT]: "#eb6834" },
-  dark: { [TOWARD_UMKC]: "#3987e5", [TOWARD_RIVERFRONT]: "#d95926" },
-};
 
 interface SpeedProfileChartProps {
   profile: SpeedProfile;

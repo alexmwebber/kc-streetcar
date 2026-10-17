@@ -1,4 +1,12 @@
-import { cacheKeyFor, defaultProfileRequest, getProfilePayload, normalizeRequest } from "./analysisService.js";
+import {
+  cacheKeyFor,
+  defaultProfileRequest,
+  defaultRunTimeRequest,
+  getProfilePayload,
+  getRunTimePayload,
+  normalizeRequest,
+  runTimeCacheKeyFor,
+} from "./analysisService.js";
 import { getCached } from "./analysisCache.js";
 
 // Keeps the analysis page's default view in memory so the common case never
@@ -10,6 +18,7 @@ async function warm(reason: string): Promise<void> {
   const started = Date.now();
   try {
     await getProfilePayload(defaultProfileRequest());
+    await getRunTimePayload(defaultRunTimeRequest());
     console.log(`[warmer] default view ready (${reason}) in ${Date.now() - started}ms`);
   } catch (err) {
     // Non-fatal: the next visitor pays for the query instead.
@@ -20,8 +29,9 @@ async function warm(reason: string): Promise<void> {
 /** Refresh the default view only if it isn't already cached - the request window
  *  snaps to a 6-hour grid, so most flushes find it still valid and do nothing. */
 export async function warmAnalysisIfDue(): Promise<void> {
-  const key = cacheKeyFor(normalizeRequest(defaultProfileRequest()));
-  if (getCached(key)) return;
+  const profileKey = cacheKeyFor(normalizeRequest(defaultProfileRequest()));
+  const runTimeKey = runTimeCacheKeyFor(normalizeRequest(defaultRunTimeRequest()));
+  if (getCached(profileKey) && getCached(runTimeKey)) return;
   await warm("after flush");
 }
 

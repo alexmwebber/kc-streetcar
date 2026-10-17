@@ -47,9 +47,8 @@ type Stretch = SpeedBin & { key: string; directions: number[] };
 /**
  * Collapse the per-direction bins onto one ribbon per physical stretch.
  *
- * Both directions run over the same rails, so drawing them as separate polylines
- * stacks them exactly - whichever paints last wins and the map silently shows one
- * direction's colour while claiming to show both. Merging by sample-weighted mean
+ * Both directions run on the same street (for the most part).
+ * Merging by sample-weighted mean
  * gives each stretch a single honest value. When the filter selects one direction
  * there is only one bin per stretch and this is a no-op; the chart always keeps the
  * directions apart, which is where the comparison belongs.

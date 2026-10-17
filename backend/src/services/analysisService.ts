@@ -1,5 +1,6 @@
 import { CANONICAL_PATH, PATH_LENGTHS_M, STOP_CHAINAGE } from "../lib/routeGeometry.js";
 import { getCached, setCached } from "./analysisCache.js";
+import { getRunTimes, type RunTimeParams } from "./runTimeRepository.js";
 import { getSpeedProfile, SPEED_CAP } from "./speedAnalysisRepository.js";
 
 // One place that turns a request for the speed/occupancy profile into a payload,
@@ -39,7 +40,7 @@ export interface ProfileRequest {
 }
 
 /** Snap a request's window to the bucket grid, keeping from < to. */
-export function normalizeRequest(req: ProfileRequest): ProfileRequest {
+export function normalizeRequest<T extends { from: Date; to: Date }>(req: T): T {
   const to = snapToBucket(req.to);
   let from = snapToBucket(req.from);
   // A sub-bucket window can collapse to zero once both ends are floored.
@@ -100,6 +101,43 @@ export async function getProfilePayload(request: ProfileRequest): Promise<unknow
       direction: req.direction,
     },
     bins,
+  };
+
+  setCached(key, payload);
+  return payload;
+}
+
+export type RunTimeRequest = RunTimeParams;
+
+export function runTimeCacheKeyFor(req: RunTimeRequest): string {
+  return JSON.stringify(["run-times", req.from.toISOString(), req.to.toISOString(), req.direction, req.todFrom, req.todTo]);
+}
+
+/** The run-time histogram for the page's default filters, warmed alongside the
+ *  profile. */
+export function defaultRunTimeRequest(): RunTimeRequest {
+  const { from, to, direction, todFrom, todTo } = defaultProfileRequest();
+  return { from, to, direction, todFrom, todTo };
+}
+
+export async function getRunTimePayload(request: RunTimeRequest): Promise<unknown> {
+  const req = normalizeRequest(request);
+  const key = runTimeCacheKeyFor(req);
+
+  const cached = getCached(key);
+  if (cached) return cached;
+
+  const histogram = await getRunTimes(req);
+  const payload = {
+    computedAt: new Date().toISOString(),
+    filters: {
+      from: req.from.toISOString(),
+      to: req.to.toISOString(),
+      todFrom: req.todFrom,
+      todTo: req.todTo,
+      direction: req.direction,
+    },
+    ...histogram,
   };
 
   setCached(key, payload);

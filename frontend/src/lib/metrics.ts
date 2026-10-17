@@ -23,8 +23,6 @@ export interface MetricDef {
   label: string;
   /** Chart title. */
   title: string;
-  /** Page heading. */
-  pageTitle: string;
   /** Reads the displayed value off a bin, already in display units. */
   value: (bin: SpeedBin) => number;
   format: (value: number) => string;
@@ -83,8 +81,7 @@ export const METRICS: Record<Metric, MetricDef> = {
   speed: {
     key: "speed",
     label: "Speed",
-    title: "Average speed along the route",
-    pageTitle: "Where the streetcar runs fast and slow",
+    title: "Average Speed Along Route",
     value: (bin) => toMph(bin.meanMps),
     format: (v) => `${v.toFixed(1)} mph`,
     axisMax: 32,
@@ -98,13 +95,12 @@ export const METRICS: Record<Metric, MetricDef> = {
     lowLabel: "Slowest stretch",
     highLabel: "Fastest stretch",
     note:
-      "Stops at terminals lasting over two minutes are excluded as layover; ordinary stop dwell and red lights are included.",
+      "Any stop lasting over two minutes is excluded as layover (in practice, almost always where the line turns back); ordinary stop dwell and red lights are included.",
   },
   occupancy: {
     key: "occupancy",
     label: "Occupancy",
     title: "Average occupancy along the route",
-    pageTitle: "Where the streetcar is full and empty",
     value: (bin) => bin.meanOccupancy,
     format: (v) => `${v.toFixed(0)}%`,
     axisMax: 100,
@@ -118,7 +114,7 @@ export const METRICS: Record<Metric, MetricDef> = {
     lowLabel: "Emptiest stretch",
     highLabel: "Fullest stretch",
     note:
-      "Percentage of seats occupied, so it can exceed 100% when riders are standing. Terminal layovers are excluded, so this is the load while in service.",
+      "Percentage of seats occupied, so it can exceed 100% when riders are standing. Stops over two minutes are excluded as layover, so this is the load while in service.",
   },
 };
 

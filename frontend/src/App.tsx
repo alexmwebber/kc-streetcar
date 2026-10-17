@@ -1,8 +1,9 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import NavBar from "./components/NavBar.js";
-import StreetcarMap from "./components/StreetcarMap.js";
 import ThemeToggle from "./components/ThemeToggle.js";
 import { useTheme } from "./lib/useTheme.js";
+import About from "./pages/About.js";
+import LiveMap from "./pages/LiveMap.js";
 import SpeedAnalysis from "./pages/SpeedAnalysis.js";
 
 export default function App() {
@@ -16,8 +17,9 @@ export default function App() {
       <NavBar />
       <main className="app-main">
         <Routes>
-          <Route path="/" element={<StreetcarMap theme={theme} />} />
+          <Route path="/" element={<LiveMap theme={theme} />} />
           <Route path="/analysis" element={<SpeedAnalysis theme={theme} />} />
+          <Route path="/about" element={<About />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
