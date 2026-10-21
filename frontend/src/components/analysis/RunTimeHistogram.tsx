@@ -24,6 +24,11 @@ const GROUP_GAP = 6;
 const CORNER = 4;
 /** Minimum horizontal spacing between x-axis labels, in viewBox units. */
 const MIN_LABEL_GAP = 36;
+/** Right edge of the x-axis. Normal runs sit around 26-39 minutes; the handful of
+ *  disrupted ones out to 80+ would squash everything else into a third of the
+ *  width. They still count toward the medians, and the subtitle says how many
+ *  are off the chart. */
+const MAX_MINUTE = 50;
 
 interface RunTimeHistogramProps {
   runTimes: RunTimes;
@@ -55,8 +60,12 @@ export default function RunTimeHistogram({ runTimes, theme }: RunTimeHistogramPr
   const [hovered, setHovered] = useState<number | null>(null);
   const { directions, minMinute } = runTimes;
 
-  const buckets = directions[0]?.counts.length ?? 0;
-  const maxCount = Math.max(0, ...directions.flatMap((d) => d.counts));
+  const buckets = Math.max(0, Math.min(directions[0]?.counts.length ?? 0, MAX_MINUTE - minMinute));
+  const maxCount = Math.max(0, ...directions.flatMap((d) => d.counts.slice(0, buckets)));
+  const offChart = directions.reduce(
+    (sum, d) => sum + d.counts.slice(buckets).reduce((a, b) => a + b, 0),
+    0,
+  );
   const yTicks = useMemo(() => niceTicks(maxCount), [maxCount]);
   const yMax = yTicks[yTicks.length - 1];
 
@@ -76,6 +85,12 @@ export default function RunTimeHistogram({ runTimes, theme }: RunTimeHistogramPr
         End-to-end run time
         <span className="chart-subtitle">
           terminal to terminal, layover excluded &middot; {total.toLocaleString()} complete runs
+          {offChart > 0 && (
+            <>
+              {" "}
+              &middot; {offChart.toLocaleString()} over {MAX_MINUTE} min not shown
+            </>
+          )}
         </span>
       </figcaption>
 
