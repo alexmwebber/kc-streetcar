@@ -139,7 +139,7 @@ For the frontend, `npm run dev` in `frontend/` uses the Vite dev proxy to `local
 
 ## Backups
 
-**[backup-db.yml](../.github/workflows/backup-db.yml)** runs `pg_dump` daily (`0 9 * * *` UTC) against Neon's direct (non-pooled) connection - PgBouncer's transaction pooling mode doesn't reliably support everything `pg_dump` needs - and uploads the gzipped result as a GitHub Actions artifact (30-day retention). Also runnable on demand via `workflow_dispatch`.
+**[backup-db.yml](../.github/workflows/backup-db.yml)** runs `pg_dump` weekly (`0 9 * * 0`, Sundays 09:00 UTC - reduced from daily because each full dump counts against Neon's 5 GB/month egress allowance) against Neon's direct (non-pooled) connection - PgBouncer's transaction pooling mode doesn't reliably support everything `pg_dump` needs - and uploads the gzipped result as a GitHub Actions artifact (30-day retention). Also runnable on demand via `workflow_dispatch`.
 
 `pg_dump` must match the server's major Postgres version (Neon currently runs 18); the workflow runs it from the official `postgres:18-alpine` Docker image rather than an apt-installed client, since Ubuntu's default package lags behind. Bump that image tag if Neon's version ever changes.
 
